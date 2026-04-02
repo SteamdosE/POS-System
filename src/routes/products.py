@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request
 
-from src.database import db
+from src.db import db
 from src.models.product import Product
 from src.utils.auth import admin_required, any_authenticated
 from src.utils.helpers import success_response, error_response, paginate_query

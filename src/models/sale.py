@@ -1,7 +1,7 @@
 """Sale and SaleItem SQLAlchemy models."""
 
 from datetime import datetime, timezone
-from src.database import db
+from src.db import db
 from src.models.base import BaseModel
 
 

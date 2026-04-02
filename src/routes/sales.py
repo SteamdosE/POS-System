@@ -6,7 +6,7 @@ from decimal import Decimal
 from flask import Blueprint, request
 from sqlalchemy import func
 
-from src.database import db
+from src.db import db
 from src.models.product import Product
 from src.models.sale import Sale, SaleItem
 from src.utils.auth import any_authenticated, manager_or_admin_required
