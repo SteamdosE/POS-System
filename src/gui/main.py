@@ -2,7 +2,7 @@
 Main POS Application Controller
 """
 import tkinter as tk
-from .screens.login import LoginScreen
+from .login import LoginScreen
 from .screens.cashier import CashierScreen
 from .screens.admin_dashboard import AdminDashboard
 from .screens.manager_dashboard import ManagerDashboard
