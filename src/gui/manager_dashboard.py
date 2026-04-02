@@ -3,10 +3,10 @@ Manager Dashboard Screen
 """
 import tkinter as tk
 from tkinter import ttk
-from ..config import *
-from ..utils.formatters import format_currency, format_datetime
-from ..utils.dialogs import show_error, show_success
-from ..utils.api_client import APIError
+from .config import *
+from .utils.formatters import format_currency, format_datetime
+from .utils.dialogs import show_error, show_success
+from .utils.api_client import APIError
 
 class ManagerDashboard(tk.Frame):
     """Manager dashboard with sales and analytics"""

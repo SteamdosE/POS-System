@@ -3,10 +3,10 @@ Admin Dashboard Screen
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
-from ..config import *
-from ..utils.formatters import format_currency, format_date
-from ..utils.dialogs import show_error, show_success, show_confirmation, show_input_dialog
-from ..utils.api_client import APIError
+from .config import *
+from .utils.formatters import format_currency, format_date
+from .utils.dialogs import show_error, show_success, show_confirmation, show_input_dialog
+from .utils.api_client import APIError
 
 class AdminDashboard(tk.Frame):
     """Admin dashboard with tabs for products, users, and reports"""

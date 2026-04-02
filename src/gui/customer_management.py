@@ -3,9 +3,9 @@ Customer Management Screen
 """
 import tkinter as tk
 from tkinter import ttk
-from ..config import *
-from ..utils.dialogs import show_error, show_success, show_confirmation
-from ..utils.api_client import APIError
+from .config import *
+from .utils.dialogs import show_error, show_success, show_confirmation
+from .utils.api_client import APIError
 
 class CustomerManagement(tk.Frame):
     """Customer management interface"""

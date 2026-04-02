@@ -3,10 +3,10 @@ Login Screen for POS System
 """
 import tkinter as tk
 from tkinter import ttk
-from ..config import *
-from ..utils.validators import validate_username, validate_password
-from ..utils.dialogs import show_error, show_success
-from ..utils.api_client import APIClient, APIError
+from .config import *
+from .utils.validators import validate_username, validate_password
+from .utils.dialogs import show_error, show_success
+from .utils.api_client import APIClient, APIError
 
 class LoginScreen(tk.Frame):
     """Login interface for POS System"""
