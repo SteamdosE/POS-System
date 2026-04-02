@@ -1,34 +1,24 @@
-class Product:
-    def __init__(self, name, description, price, category_id):
-        self.name = name
-        self.description = description
-        self.price = price
-        self.category_id = category_id
+"""Product SQLAlchemy model."""
 
-    def save(self):
-        # Code to save the product to the database
-        pass
+from src.models.base import BaseModel
+from src.database import db
 
-    @classmethod
-    def get_by_id(cls, product_id):
-        # Code to get a product by its ID
-        pass
 
-    @classmethod
-    def get_all(cls):
-        # Code to get all products
-        pass
+class Product(BaseModel):
+    """Represents a product available for sale."""
 
-    @classmethod
-    def get_by_category(cls, category_id):
-        # Code to get products by category
-        pass
+    __tablename__ = "products"
 
-    def update(self, **kwargs):
-        # Code to update product attributes
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    name = db.Column(db.String(120), nullable=False, index=True)
+    sku = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+    quantity_in_stock = db.Column(db.Integer, nullable=False, default=0)
+    category = db.Column(db.String(80), nullable=True, index=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
-    def delete(self):
-        # Code to delete the product from the database
-        pass
+    # Relationships
+    sale_items = db.relationship("SaleItem", back_populates="product", lazy="dynamic")
+
+    def __repr__(self) -> str:
+        return f"<Product {self.sku}: {self.name}>"
