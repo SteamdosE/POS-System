@@ -84,5 +84,5 @@ def login():
     if not user.is_active:
         return error_response("Account is deactivated", 403)
 
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
     return success_response({"user": user.to_dict(), "access_token": token}, "Login successful")
