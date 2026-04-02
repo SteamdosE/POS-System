@@ -1,33 +1,56 @@
-class User:
-    def __init__(self, username, password, email, role):
-        self.username = username
-        self.password = password
-        self.email = email
-        self.role = role
+"""User SQLAlchemy model."""
 
-    def save(self):
-        # code to save user to the database
-        pass
+from werkzeug.security import generate_password_hash, check_password_hash
+from src.models.base import BaseModel
+from src.database import db
 
-    @classmethod
-    def get_by_id(cls, user_id):
-        # code to retrieve user by ID from the database
-        pass
 
-    @classmethod
-    def get_by_username(cls, username):
-        # code to retrieve user by username from the database
-        pass
+class User(BaseModel):
+    """Represents a system user (admin, manager, or cashier)."""
 
-    @classmethod
-    def get_all(cls):
-        # code to retrieve all users from the database
-        pass
+    __tablename__ = "users"
 
-    def update(self):
-        # code to update user in the database
-        pass
+    username = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    email = db.Column(db.String(120), nullable=False, unique=True, index=True)
+    password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(
+        db.Enum("admin", "manager", "cashier", name="user_role"),
+        nullable=False,
+        default="cashier",
+    )
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
-    def delete(self):
-        # code to delete user from the database
-        pass
+    # Relationships
+    sales = db.relationship("Sale", back_populates="cashier", lazy="dynamic")
+
+    def set_password(self, password: str) -> None:
+        """Hash and store the user's password.
+
+        Args:
+            password: Plain-text password.
+        """
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        """Verify a plain-text password against the stored hash.
+
+        Args:
+            password: Plain-text password to verify.
+
+        Returns:
+            bool: True if the password matches.
+        """
+        return check_password_hash(self.password_hash, password)
+
+    def to_dict(self) -> dict:
+        """Serialize the user, excluding the password hash.
+
+        Returns:
+            dict: User fields safe for API responses.
+        """
+        data = super().to_dict()
+        data.pop("password_hash", None)
+        return data
+
+    def __repr__(self) -> str:
+        return f"<User {self.username} ({self.role})>"

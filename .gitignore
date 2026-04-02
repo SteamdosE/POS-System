@@ -9,3 +9,13 @@ __pycache__/
 # Virtualenv
 .env/
 .venv/
+
+# Environment variables
+.env
+
+# SQLite databases
+*.db
+*.sqlite3
+
+# Flask instance folder
+instance/
