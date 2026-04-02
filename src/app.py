@@ -7,8 +7,8 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-from src.config import get_config
-from src.database import init_db
+from config import get_config
+from database import db
 
 
 def create_app(config=None) -> Flask:
