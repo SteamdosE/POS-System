@@ -2,7 +2,7 @@
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from src.models.base import BaseModel
-from src.database import db
+from src.db import db
 
 
 class User(BaseModel):

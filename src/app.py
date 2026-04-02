@@ -8,7 +8,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from src.config import get_config
-from database import db, init_db
+from src.db import db, init_db
 
 
 def create_app(config=None) -> Flask:

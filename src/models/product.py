@@ -1,7 +1,7 @@
 """Product SQLAlchemy model."""
 
 from src.models.base import BaseModel
-from src.database import db
+from src.db import db
 
 
 class Product(BaseModel):

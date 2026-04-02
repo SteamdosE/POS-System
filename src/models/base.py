@@ -1,7 +1,7 @@
 """Base SQLAlchemy model with common fields."""
 
 from datetime import datetime, timezone
-from src.database import db
+from src.db import db
 
 
 class BaseModel(db.Model):

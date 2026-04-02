@@ -3,7 +3,7 @@
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt_identity
 
-from src.database import db
+from src.db import db
 from src.models.user import User
 from src.utils.auth import admin_required, any_authenticated
 from src.utils.helpers import success_response, error_response, paginate_query

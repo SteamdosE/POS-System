@@ -3,7 +3,7 @@
 from flask import Blueprint, request
 from flask_jwt_extended import create_access_token
 
-from src.database import db
+from src.db import db
 from src.models.user import User
 from src.utils.helpers import success_response, error_response
 
