@@ -114,4 +114,7 @@ class LoginScreen(tk.Frame):
         except APIError as e:
             self.error_label.config(text=str(e))
         except Exception as e:
-            self.error_label.config(text="Login failed: " + str(e))
+            if self.error_label.winfo_exists():
+                self.error_label.config(text="Login failed: " + str(e))
+            else:
+                show_error("Error", "Login failed: " + str(e))

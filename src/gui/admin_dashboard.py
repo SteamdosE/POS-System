@@ -127,12 +127,13 @@ class AdminDashboard(tk.Frame):
             response = self.api_client.get_products()
             for item in self.products_tree.get_children():
                 self.products_tree.delete(item)
-            
-            for product in response.get("products", []):
+
+            items = (response.get("data") or {}).get("items", [])
+            for product in items:
                 self.products_tree.insert("", tk.END, text=product.get("id", ""), values=(
                     product.get("name", ""),
                     format_currency(product.get("price", 0)),
-                    product.get("quantity", 0),
+                    product.get("quantity_in_stock", 0),
                     product.get("category", "")
                 ))
         except APIError as e:
@@ -144,8 +145,9 @@ class AdminDashboard(tk.Frame):
             response = self.api_client.get_users()
             for item in self.users_tree.get_children():
                 self.users_tree.delete(item)
-            
-            for user in response:
+
+            items = (response.get("data") or {}).get("items", [])
+            for user in items:
                 self.users_tree.insert("", tk.END, text=user.get("id", ""), values=(
                     user.get("username", ""),
                     user.get("email", ""),

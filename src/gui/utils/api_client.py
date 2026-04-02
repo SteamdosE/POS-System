@@ -77,9 +77,9 @@ class APIClient:
         self.user_data = None
     
     # Product Methods
-    def get_products(self, page: int = 1, limit: int = 20) -> Dict[str, Any]:
+    def get_products(self, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
         """Get paginated list of products"""
-        return self._request("GET", f"/products?page={page}&limit={limit}")
+        return self._request("GET", f"/products?page={page}&per_page={per_page}")
     
     def get_product(self, product_id: int) -> Dict[str, Any]:
         """Get single product by ID"""
