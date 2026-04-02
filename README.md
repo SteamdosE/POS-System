@@ -21,7 +21,7 @@ The POS system is designed to streamline retail transactions with a user-friendl
    - Windows: `python -m venv venv` then `venv\Scripts\activate`
    - macOS/Linux: `python -m venv venv` then `source venv/bin/activate`
 4. Install dependencies: `pip install -r requirements.txt`
-5. Start the backend server: `python start_backend.py`
+5. Start the backend server: `python -m src.app`
 
 The app uses **SQLite** for storage (`pos_system.db` is created automatically on first run).
 

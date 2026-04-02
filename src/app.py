@@ -7,7 +7,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-from config import get_config
+from src.config import get_config
 from src.db import db, init_db
 
 
