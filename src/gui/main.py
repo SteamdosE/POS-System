@@ -103,3 +103,14 @@ class POSApplication:
             self.current_frame.pack_forget()
             self.current_frame.destroy()
             self.current_frame = None
+
+
+def main():
+    """Main entry point for the POS application"""
+    root = tk.Tk()
+    app = POSApplication(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
