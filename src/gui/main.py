@@ -32,7 +32,7 @@ class POSApplication:
     def on_login_success(self, api_client):
         """Handle successful login"""
         self.api_client = api_client
-        user_role = api_client.user_data.get("role", "cashier")
+        user_role = (api_client.user_data or {}).get("role", "cashier")
         
         if user_role == "admin":
             self.show_admin_dashboard()

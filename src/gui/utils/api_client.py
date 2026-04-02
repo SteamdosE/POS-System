@@ -61,8 +61,9 @@ class APIClient:
         """Login user and get JWT token"""
         data = {"username": username, "password": password}
         response = self._request("POST", "/auth/login", data)
-        self.token = response.get("token")
-        self.user_data = response.get("user")
+        payload = response.get("data") or {}
+        self.token = payload.get("access_token")
+        self.user_data = payload.get("user")
         return response
     
     def register(self, username: str, email: str, password: str, role: str = "cashier") -> Dict[str, Any]:
