@@ -26,7 +26,27 @@ The POS system is designed to streamline retail transactions with a user-friendl
 The app uses **SQLite** for storage (`pos_system.db` is created automatically on first run).
 
 ## Usage
+
+### Backend
 After installation, the API server runs at `http://localhost:5000`.
+
+### Desktop GUI (Tkinter)
+The desktop GUI must be run **after** the backend server is started (it connects to `http://localhost:5000/api`).
+
+Install GUI dependencies first (if not already done):
+```bash
+pip install -r requirements_gui.txt
+```
+
+Then launch the GUI from the repo root with the venv active:
+```bash
+python -m src.gui.main
+```
+
+Alternatively, use the provided entry-point script:
+```bash
+python run.py
+```
 
 ## Contributing
 Contributions are welcome! Please open an issue or pull request for new features or improvements.

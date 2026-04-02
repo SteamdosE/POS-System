@@ -3,10 +3,10 @@ Main POS Application Controller
 """
 import tkinter as tk
 from .login import LoginScreen
-from .screens.cashier import CashierScreen
-from .screens.admin_dashboard import AdminDashboard
-from .screens.manager_dashboard import ManagerDashboard
-from .screens.customer_management import CustomerManagement
+from .cashier import CashierScreen
+from .admin_dashboard import AdminDashboard
+from .manager_dashboard import ManagerDashboard
+from .customer_management import CustomerManagement
 from .config import *
 
 class POSApplication:

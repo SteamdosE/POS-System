@@ -3,11 +3,11 @@ Cashier Screen - Main POS Interface
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
-from ..config import *
-from ..utils.formatters import format_currency
-from ..utils.validators import validate_price, validate_quantity
-from ..utils.dialogs import show_error, show_success, show_confirmation
-from ..utils.api_client import APIError
+from .config import *
+from .utils.formatters import format_currency
+from .utils.validators import validate_price, validate_quantity
+from .utils.dialogs import show_error, show_success, show_confirmation
+from .utils.api_client import APIError
 
 class CashierScreen(tk.Frame):
     """Main cashier/POS interface"""
