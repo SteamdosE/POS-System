@@ -11,17 +11,22 @@ The POS system is designed to streamline retail transactions with a user-friendl
 
 ## Installation
 ### Requirements
-- Node.js
-- MongoDB
+- Python 3.9+
+- pip
 
 ### Steps
 1. Clone the repository: `git clone https://github.com/SteamdosE/POS-System.git`
 2. Navigate to the project directory: `cd POS-System`
-3. Install dependencies: `npm install`
-4. Start the server: `npm start`
+3. Create and activate a virtual environment:
+   - Windows: `python -m venv venv` then `venv\Scripts\activate`
+   - macOS/Linux: `python -m venv venv` then `source venv/bin/activate`
+4. Install dependencies: `pip install -r requirements.txt`
+5. Start the backend server: `python start_backend.py`
+
+The app uses **SQLite** for storage (`pos_system.db` is created automatically on first run).
 
 ## Usage
-After installation, navigate to `http://localhost:3000` in your web browser to access the POS system.
+After installation, the API server runs at `http://localhost:5000`.
 
 ## Contributing
 Contributions are welcome! Please open an issue or pull request for new features or improvements.
