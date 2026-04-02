@@ -1,46 +1,27 @@
-import mysql.connector
-from mysql.connector import Error
+import os
+import sqlite3
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class DatabaseManager:
-    def __init__(self, host, user, password, database):
-        self.host = host
-        self.user = user
-        self.password = password
-        self.database = database
+    def __init__(self, db_path=None):
+        # allow DATABASE_URL like sqlite:///pos_system.db
+        if db_path is None:
+            db_url = os.getenv("DATABASE_URL", "sqlite:///pos_system.db")
+            if db_url.startswith("sqlite:///"):
+                db_path = db_url.replace("sqlite:///", "", 1)
+            else:
+                db_path = "pos_system.db"
+        self.db_path = db_path
         self.connection = None
 
     def create_connection(self):
-        """ Create a database connection to a MySQL database """
-        try:
-            self.connection = mysql.connector.connect(
-                host=self.host,
-                user=self.user,
-                password=self.password,
-                database=self.database
-            )
-            if self.connection.is_connected():
-                print("Connection to MySQL DB successful")
-        except Error as e:
-            print(f"Error: '{e}'")
+        self.connection = sqlite3.connect(self.db_path)
+        self.connection.execute("PRAGMA foreign_keys = ON;")
+        print("Connection to SQLite DB successful")
 
     def close_connection(self):
-        """ Close the database connection """
-        if self.connection.is_connected():
+        if self.connection:
             self.connection.close()
-            print("Connection to MySQL DB closed")
-
-    def execute_query(self, query):
-        """ Execute a single query """
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(query)
-            self.connection.commit()
-            print("Query executed successfully")
-        except Error as e:
-            print(f"Error: '{e}'")
-
-    def fetch_query(self, query):
-        """ Fetch results from a query """
-        cursor = self.connection.cursor()
-        cursor.execute(query)
-        return cursor.fetchall()
+            print("Connection to SQLite DB closed")
