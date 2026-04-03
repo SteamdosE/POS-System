@@ -139,19 +139,59 @@ class AdminDashboard(tk.Frame):
         """Load and display products"""
         try:
             response = self.api_client.get_products()
+            print(f"DEBUG: Full response: {response}")
+            print(f"DEBUG: Response type: {type(response)}")
+            
             for item in self.products_tree.get_children():
                 self.products_tree.delete(item)
 
-            products = response.get("products", [])
+            # Try different possible response formats
+            products = None
+            
+            if isinstance(response, dict):
+                # Try different keys
+                if "products" in response:
+                    products = response.get("products", [])
+                    print(f"DEBUG: Found 'products' key: {products}")
+                elif "data" in response:
+                    data = response.get("data", {})
+                    if isinstance(data, dict) and "items" in data:
+                        products = data.get("items", [])
+                        print(f"DEBUG: Found 'data.items' key: {products}")
+                    elif isinstance(data, list):
+                        products = data
+                        print(f"DEBUG: Found 'data' as list: {products}")
+                elif isinstance(response, list):
+                    products = response
+                    print(f"DEBUG: Response is list: {products}")
+            elif isinstance(response, list):
+                products = response
+                print(f"DEBUG: Response is direct list: {products}")
+            
+            if not products:
+                print(f"DEBUG: No products found! Response keys: {response.keys() if isinstance(response, dict) else 'N/A'}")
+                show_error("Error", "No products found in response")
+                return
+            
             for product in products:
+                print(f"DEBUG: Processing product: {product}")
                 self.products_tree.insert("", tk.END, text=product.get("id", ""), values=(
                     product.get("name", ""),
                     format_currency(product.get("price", 0)),
                     product.get("quantity_in_stock", 0),
                     product.get("category", "N/A")
                 ))
+            
+            print(f"DEBUG: Loaded {len(products)} products")
+            
         except APIError as e:
+            print(f"DEBUG: APIError: {e}")
             show_error("Error", f"Failed to load products: {str(e)}")
+        except Exception as e:
+            print(f"DEBUG: Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
+            show_error("Error", f"Error loading products: {str(e)}")
     
     def load_users(self):
         """Load and display users"""
