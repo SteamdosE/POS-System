@@ -191,114 +191,125 @@ class AdminDashboard(tk.Frame):
             pass
     
     def add_product(self):
-        """Add new product dialog"""
-        dialog = tk.Toplevel(self)
-        dialog.title("Add Product")
-        dialog.geometry("400x400")
-        dialog.resizable(False, False)
-        
-        # Name
-        tk.Label(dialog, text="Product Name:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        name_entry = tk.Entry(dialog, width=30)
-        name_entry.grid(row=0, column=1, padx=10, pady=5)
-        
-        # Category
-        tk.Label(dialog, text="Category:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        category_entry = tk.Entry(dialog, width=30)
-        category_entry.grid(row=1, column=1, padx=10, pady=5)
-        
-        # Price
-        tk.Label(dialog, text="Price:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        price_entry = tk.Entry(dialog, width=30)
-        price_entry.grid(row=2, column=1, padx=10, pady=5)
-        
-        # Stock
-        tk.Label(dialog, text="Initial Stock:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        stock_entry = tk.Entry(dialog, width=30)
-        stock_entry.grid(row=3, column=1, padx=10, pady=5)
-        
-        def save():
-            try:
-                data = {
-                    "name": name_entry.get(),
-                    "category": category_entry.get() or "General",
-                    "price": float(price_entry.get()),
-                    "quantity": int(stock_entry.get())
-                }
-                
-                if not data["name"]:
-                    show_error("Error", "Product name required")
-                    return
-                
-                response = self.api_client.create_product(data)
-                show_success("Success", "Product added successfully!")
-                self.load_products()
-                dialog.destroy()
-            except ValueError:
-                show_error("Error", "Invalid price or stock quantity")
-            except APIError as e:
-                show_error("Error", f"Failed to add product: {str(e)}")
-        
-        tk.Button(dialog, text="Save", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=4, column=0, columnspan=2, pady=20)
+    """Add new product dialog"""
+    dialog = tk.Toplevel(self)
+    dialog.title("Add Product")
+    dialog.geometry("400x450")
+    dialog.resizable(False, False)
     
-    def edit_product(self):
-        """Edit product dialog"""
-        selection = self.products_tree.selection()
-        if not selection:
-            show_error("Error", "Select a product first")
-            return
-        
-        item = self.products_tree.item(selection[0])
-        product_id = item["text"]
-        product_name = item["values"][0]
-        product_price = item["values"][1].replace("$", "")
-        product_stock = item["values"][2]
-        product_category = item["values"][3]
-        
-        dialog = tk.Toplevel(self)
-        dialog.title(f"Edit Product: {product_name}")
-        dialog.geometry("400x400")
-        dialog.resizable(False, False)
-        
-        tk.Label(dialog, text="Product Name:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        name_entry = tk.Entry(dialog, width=30)
-        name_entry.insert(0, product_name)
-        name_entry.grid(row=0, column=1, padx=10, pady=5)
-        
-        tk.Label(dialog, text="Category:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        category_entry = tk.Entry(dialog, width=30)
-        category_entry.insert(0, product_category)
-        category_entry.grid(row=1, column=1, padx=10, pady=5)
-        
-        tk.Label(dialog, text="Price:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        price_entry = tk.Entry(dialog, width=30)
-        price_entry.insert(0, product_price)
-        price_entry.grid(row=2, column=1, padx=10, pady=5)
-        
-        tk.Label(dialog, text="Stock:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        stock_entry = tk.Entry(dialog, width=30)
-        stock_entry.insert(0, str(product_stock))
-        stock_entry.grid(row=3, column=1, padx=10, pady=5)
-        
-        def save():
-            try:
-                data = {
-                    "name": name_entry.get(),
-                    "category": category_entry.get(),
-                    "price": float(price_entry.get()),
-                    "quantity": int(stock_entry.get())
-                }
-                
-                response = self.api_client.update_product(product_id, data)
-                show_success("Success", "Product updated successfully!")
-                self.load_products()
-                dialog.destroy()
-            except ValueError:
-                show_error("Error", "Invalid price or stock quantity")
-            except APIError as e:
-                show_error("Error", f"Failed to update product: {str(e)}")
-        
-        tk.Button(dialog, text="Save Changes", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=4, column=0, columnspan=2, pady=20)
+    # Name
+    tk.Label(dialog, text="Product Name:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    name_entry = tk.Entry(dialog, width=30)
+    name_entry.grid(row=0, column=1, padx=10, pady=5)
+    
+    # SKU (REQUIRED - this was missing!)
+    tk.Label(dialog, text="SKU/Barcode:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+    sku_entry = tk.Entry(dialog, width=30)
+    sku_entry.grid(row=1, column=1, padx=10, pady=5)
+    
+    # Category
+    tk.Label(dialog, text="Category:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+    category_entry = tk.Entry(dialog, width=30)
+    category_entry.grid(row=2, column=1, padx=10, pady=5)
+    
+    # Price
+    tk.Label(dialog, text="Price:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
+    price_entry = tk.Entry(dialog, width=30)
+    price_entry.grid(row=3, column=1, padx=10, pady=5)
+    
+    # Stock
+    tk.Label(dialog, text="Initial Stock:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
+    stock_entry = tk.Entry(dialog, width=30)
+    stock_entry.grid(row=4, column=1, padx=10, pady=5)
+    
+    def save():
+        try:
+            # FIX: Use correct field names for backend
+            data = {
+                "name": name_entry.get(),
+                "sku": sku_entry.get(),  # ← REQUIRED
+                "category": category_entry.get() or "General",
+                "price": float(price_entry.get()),
+                "quantity_in_stock": int(stock_entry.get())  # ← Changed from "quantity"
+            }
+            
+            # Validation
+            if not data["name"]:
+                show_error("Error", "Product name required")
+                return
+            if not data["sku"]:
+                show_error("Error", "SKU/Barcode required")
+                return
+            
+            # Call API with correct field names
+            response = self.api_client.create_product(data)
+            show_success("Success", "Product added successfully!")
+            self.load_products()
+            dialog.destroy()
+        except ValueError:
+            show_error("Error", "Invalid price or stock quantity")
+        except APIError as e:
+            show_error("Error", f"Failed to add product: {str(e)}")
+    
+    tk.Button(dialog, text="Save", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=5, column=0, columnspan=2, pady=20)
+   def edit_product(self):
+    """Edit product dialog"""
+    selection = self.products_tree.selection()
+    if not selection:
+        show_error("Error", "Select a product first")
+        return
+    
+    item = self.products_tree.item(selection[0])
+    product_id = item["text"]
+    product_name = item["values"][0]
+    product_price = item["values"][1].replace("$", "")
+    product_stock = item["values"][2]
+    product_category = item["values"][3]
+    
+    dialog = tk.Toplevel(self)
+    dialog.title(f"Edit Product: {product_name}")
+    dialog.geometry("400x400")
+    dialog.resizable(False, False)
+    
+    tk.Label(dialog, text="Product Name:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    name_entry = tk.Entry(dialog, width=30)
+    name_entry.insert(0, product_name)
+    name_entry.grid(row=0, column=1, padx=10, pady=5)
+    
+    tk.Label(dialog, text="Category:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+    category_entry = tk.Entry(dialog, width=30)
+    category_entry.insert(0, product_category)
+    category_entry.grid(row=1, column=1, padx=10, pady=5)
+    
+    tk.Label(dialog, text="Price:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+    price_entry = tk.Entry(dialog, width=30)
+    price_entry.insert(0, product_price)
+    price_entry.grid(row=2, column=1, padx=10, pady=5)
+    
+    tk.Label(dialog, text="Stock:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
+    stock_entry = tk.Entry(dialog, width=30)
+    stock_entry.insert(0, str(product_stock))
+    stock_entry.grid(row=3, column=1, padx=10, pady=5)
+    
+    def save():
+        try:
+            data = {
+                "name": name_entry.get(),
+                "category": category_entry.get(),
+                "price": float(price_entry.get()),
+                "quantity_in_stock": int(stock_entry.get())  # ← Changed from "quantity"
+            }
+            
+            response = self.api_client.update_product(product_id, data)
+            show_success("Success", "Product updated successfully!")
+            self.load_products()
+            dialog.destroy()
+        except ValueError:
+            show_error("Error", "Invalid price or stock quantity")
+        except APIError as e:
+            show_error("Error", f"Failed to update product: {str(e)}")
+    
+    tk.Button(dialog, text="Save Changes", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=4, column=0, columnspan=2, pady=20)
     
     def delete_product(self):
         """Delete product"""
