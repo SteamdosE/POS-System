@@ -203,7 +203,7 @@ class AdminDashboard(tk.Frame):
         name_entry = tk.Entry(dialog, width=30)
         name_entry.grid(row=0, column=1, padx=10, pady=5)
         
-        # SKU (REQUIRED - this was missing!)
+        # SKU (REQUIRED)
         tk.Label(dialog, text="SKU/Barcode:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         sku_entry = tk.Entry(dialog, width=30)
         sku_entry.grid(row=1, column=1, padx=10, pady=5)
@@ -224,53 +224,45 @@ class AdminDashboard(tk.Frame):
         stock_entry.grid(row=4, column=1, padx=10, pady=5)
         
         def save():
-    try:
-        print("DEBUG: Save button clicked!")  # ← Check terminal
-        
-        # Get values
-        name = name_entry.get()
-        sku = sku_entry.get()
-        category = category_entry.get() or "General"
-        price_str = price_entry.get()
-        stock_str = stock_entry.get()
-        
-        print(f"DEBUG: name={name}, sku={sku}, price={price_str}, stock={stock_str}")
-        
-        # Validate
-        if not name:
-            show_error("Error", "Product name required")
-            return
-        if not sku:
-            show_error("Error", "SKU required")
-            return
-        
-        # Convert to numbers
-        price = float(price_str)
-        quantity = int(stock_str)
-        
-        data = {
-            "name": name,
-            "sku": sku,
-            "category": category,
-            "price": price,
-            "quantity_in_stock": quantity
-        }
-        
-        print(f"DEBUG: Calling API with: {data}")
-        
-        # Call API
-        response = self.api_client.create_product(data)
-        print(f"DEBUG: Response: {response}")
-        
-        show_success("Success", "Product added!")
-        self.load_products()
-        dialog.destroy()
-        
-    except Exception as e:
-        print(f"DEBUG ERROR: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()  # ← Shows full error
-        show_error("Error", f"Failed: {str(e)}")
+            try:
+                # Get values
+                name = name_entry.get()
+                sku = sku_entry.get()
+                category = category_entry.get() or "General"
+                price_str = price_entry.get()
+                stock_str = stock_entry.get()
+                
+                # Validate
+                if not name:
+                    show_error("Error", "Product name required")
+                    return
+                if not sku:
+                    show_error("Error", "SKU required")
+                    return
+                
+                # Convert to numbers
+                price = float(price_str)
+                quantity = int(stock_str)
+                
+                # Call API with correct parameter names
+                response = self.api_client.create_product(
+                    name=name,
+                    sku=sku,
+                    price=price,
+                    category=category,
+                    quantity=quantity
+                )
+                
+                show_success("Success", "Product added successfully!")
+                self.load_products()
+                dialog.destroy()
+                
+            except ValueError:
+                show_error("Error", "Invalid price or stock quantity")
+            except APIError as e:
+                show_error("Error", f"Failed to add product: {str(e)}")
+            except Exception as e:
+                show_error("Error", f"Unexpected error: {str(e)}")
         
         tk.Button(dialog, text="Save", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=5, column=0, columnspan=2, pady=20)
     
@@ -315,14 +307,19 @@ class AdminDashboard(tk.Frame):
         
         def save():
             try:
-                data = {
-                    "name": name_entry.get(),
-                    "category": category_entry.get(),
-                    "price": float(price_entry.get()),
-                    "quantity_in_stock": int(stock_entry.get())  # ← Changed from "quantity"
-                }
+                name = name_entry.get()
+                category = category_entry.get()
+                price = float(price_entry.get())
+                quantity = int(stock_entry.get())
                 
-                response = self.api_client.update_product(product_id, data)
+                response = self.api_client.update_product(
+                    product_id=product_id,
+                    name=name,
+                    category=category,
+                    price=price,
+                    quantity=quantity
+                )
+                
                 show_success("Success", "Product updated successfully!")
                 self.load_products()
                 dialog.destroy()
@@ -330,6 +327,8 @@ class AdminDashboard(tk.Frame):
                 show_error("Error", "Invalid price or stock quantity")
             except APIError as e:
                 show_error("Error", f"Failed to update product: {str(e)}")
+            except Exception as e:
+                show_error("Error", f"Unexpected error: {str(e)}")
         
         tk.Button(dialog, text="Save Changes", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=4, column=0, columnspan=2, pady=20)
     
@@ -378,23 +377,29 @@ class AdminDashboard(tk.Frame):
         
         def save():
             try:
-                data = {
-                    "username": username_entry.get(),
-                    "email": email_entry.get(),
-                    "password": password_entry.get(),
-                    "role": role_var.get()
-                }
+                username = username_entry.get()
+                email = email_entry.get()
+                password = password_entry.get()
+                role = role_var.get()
                 
-                if not all([data["username"], data["email"], data["password"]]):
+                if not all([username, email, password]):
                     show_error("Error", "All fields required")
                     return
                 
-                response = self.api_client.create_user(data)
+                response = self.api_client.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    role=role
+                )
+                
                 show_success("Success", "User added successfully!")
                 self.load_users()
                 dialog.destroy()
             except APIError as e:
                 show_error("Error", f"Failed to add user: {str(e)}")
+            except Exception as e:
+                show_error("Error", f"Unexpected error: {str(e)}")
         
         tk.Button(dialog, text="Save", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=4, column=0, columnspan=2, pady=20)
     
@@ -428,17 +433,22 @@ class AdminDashboard(tk.Frame):
         
         def save():
             try:
-                data = {
-                    "email": email_entry.get(),
-                    "role": role_var.get()
-                }
+                new_email = email_entry.get()
+                new_role = role_var.get()
                 
-                response = self.api_client.update_user(user_id, data)
+                response = self.api_client.update_user(
+                    user_id=user_id,
+                    email=new_email,
+                    role=new_role
+                )
+                
                 show_success("Success", "User updated successfully!")
                 self.load_users()
                 dialog.destroy()
             except APIError as e:
                 show_error("Error", f"Failed to update user: {str(e)}")
+            except Exception as e:
+                show_error("Error", f"Unexpected error: {str(e)}")
         
         tk.Button(dialog, text="Save Changes", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=2, column=0, columnspan=2, pady=20)
     
