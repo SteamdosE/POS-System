@@ -224,33 +224,53 @@ class AdminDashboard(tk.Frame):
         stock_entry.grid(row=4, column=1, padx=10, pady=5)
         
         def save():
-            try:
-                # FIX: Use correct field names for backend
-                data = {
-                    "name": name_entry.get(),
-                    "sku": sku_entry.get(),  # ← REQUIRED
-                    "category": category_entry.get() or "General",
-                    "price": float(price_entry.get()),
-                    "quantity_in_stock": int(stock_entry.get())  # ← Changed from "quantity"
-                }
-                
-                # Validation
-                if not data["name"]:
-                    show_error("Error", "Product name required")
-                    return
-                if not data["sku"]:
-                    show_error("Error", "SKU/Barcode required")
-                    return
-                
-                # Call API with correct field names
-                response = self.api_client.create_product(data)
-                show_success("Success", "Product added successfully!")
-                self.load_products()
-                dialog.destroy()
-            except ValueError:
-                show_error("Error", "Invalid price or stock quantity")
-            except APIError as e:
-                show_error("Error", f"Failed to add product: {str(e)}")
+    try:
+        print("DEBUG: Save button clicked!")  # ← Check terminal
+        
+        # Get values
+        name = name_entry.get()
+        sku = sku_entry.get()
+        category = category_entry.get() or "General"
+        price_str = price_entry.get()
+        stock_str = stock_entry.get()
+        
+        print(f"DEBUG: name={name}, sku={sku}, price={price_str}, stock={stock_str}")
+        
+        # Validate
+        if not name:
+            show_error("Error", "Product name required")
+            return
+        if not sku:
+            show_error("Error", "SKU required")
+            return
+        
+        # Convert to numbers
+        price = float(price_str)
+        quantity = int(stock_str)
+        
+        data = {
+            "name": name,
+            "sku": sku,
+            "category": category,
+            "price": price,
+            "quantity_in_stock": quantity
+        }
+        
+        print(f"DEBUG: Calling API with: {data}")
+        
+        # Call API
+        response = self.api_client.create_product(data)
+        print(f"DEBUG: Response: {response}")
+        
+        show_success("Success", "Product added!")
+        self.load_products()
+        dialog.destroy()
+        
+    except Exception as e:
+        print(f"DEBUG ERROR: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()  # ← Shows full error
+        show_error("Error", f"Failed: {str(e)}")
         
         tk.Button(dialog, text="Save", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save, width=20).grid(row=5, column=0, columnspan=2, pady=20)
     
