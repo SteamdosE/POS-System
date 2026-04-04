@@ -4,9 +4,22 @@ Data Formatting Utilities for POS System GUI
 from datetime import datetime
 from typing import Union
 
-def format_currency(amount: Union[int, float]) -> str:
+def _coerce_float(value: Union[int, float, str, None]) -> float:
+    """Convert user/API numeric values to float safely."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if value is None:
+        return 0.0
+
+    cleaned = str(value).replace("Ksh", "").replace(",", "").strip()
+    try:
+        return float(cleaned)
+    except (TypeError, ValueError):
+        return 0.0
+
+def format_currency(amount: Union[int, float, str, None]) -> str:
     """Format amount as currency (Ksh 1,234.50)"""
-    return f"Ksh {amount:,.2f}"
+    return f"Ksh {_coerce_float(amount):,.2f}"
 
 def format_date(date_obj: datetime) -> str:
     """Format date as readable string (02 Apr 2026)"""
@@ -30,11 +43,7 @@ def format_phone(phone: str) -> str:
 def parse_currency(text: str) -> float:
     """Convert currency string to float"""
     # Remove Ksh symbol and whitespace, convert to float
-    cleaned = text.replace("Ksh", "").replace(",", "").strip()
-    try:
-        return float(cleaned)
-    except ValueError:
-        return 0.0
+    return _coerce_float(text)
 
 def format_percentage(value: float, decimals: int = 1) -> str:
     """Format value as percentage"""

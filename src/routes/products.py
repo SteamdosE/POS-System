@@ -4,7 +4,7 @@ from flask import Blueprint, request
 
 from src.db import db
 from src.models.product import Product
-from src.utils.auth import admin_required, any_authenticated
+from src.utils.auth import any_authenticated, manager_or_admin_required
 from src.utils.helpers import success_response, error_response, paginate_query
 
 products_bp = Blueprint("products", __name__, url_prefix="/api/products")
@@ -57,7 +57,7 @@ def get_product(product_id: int):
 
 
 @products_bp.route("", methods=["POST"])
-@admin_required
+@manager_or_admin_required
 def create_product():
     """Create a new product (admin only).
 
@@ -109,7 +109,7 @@ def create_product():
 
 
 @products_bp.route("/<int:product_id>", methods=["PUT"])
-@admin_required
+@manager_or_admin_required
 def update_product(product_id: int):
     """Update a product (admin only).
 
@@ -157,7 +157,7 @@ def update_product(product_id: int):
 
 
 @products_bp.route("/<int:product_id>", methods=["DELETE"])
-@admin_required
+@manager_or_admin_required
 def delete_product(product_id: int):
     """Soft-delete a product (admin only).
 

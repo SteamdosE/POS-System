@@ -15,7 +15,130 @@ class AdminDashboard(tk.Frame):
     def __init__(self, parent, api_client):
         super().__init__(parent, bg=COLOR_LIGHT)
         self.api_client = api_client
+        self.categories = []
         self.setup_ui()
+
+    @staticmethod
+    def _extract_products(response):
+        data = response.get("data") or {}
+        return response.get("products") or data.get("products") or data.get("items") or []
+
+    @staticmethod
+    def _extract_users(response):
+        data = response.get("data") or {}
+        return response.get("users") or data.get("users") or data.get("items") or []
+
+    @staticmethod
+    def _extract_categories(response):
+        data = response.get("data") or {}
+        return response.get("categories") or data.get("categories") or data.get("items") or []
+
+    def load_categories(self):
+        """Load categories for comboboxes and category management."""
+        response = self.api_client.get_categories()
+        self.categories = self._extract_categories(response)
+        if not self.categories:
+            self.categories = [{"id": 0, "name": "General"}]
+
+    def get_category_names(self):
+        """Return sorted category names for combobox values."""
+        names = sorted({(c.get("name") or "").strip() for c in self.categories if (c.get("name") or "").strip()})
+        return names or ["General"]
+
+    def manage_categories(self):
+        """Open category management dialog for admin/manager roles."""
+        try:
+            self.load_categories()
+        except APIError as e:
+            show_error("Error", f"Failed to load categories: {str(e)}")
+            return
+
+        dialog = tk.Toplevel(self)
+        dialog.title("Manage Categories")
+        dialog.geometry("420x380")
+        dialog.resizable(False, False)
+
+        tk.Label(dialog, text="Product Categories", font=FONT_HEADING).pack(pady=(10, 5))
+
+        category_list = tk.Listbox(dialog, height=14)
+        category_list.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        def refresh_listbox():
+            category_list.delete(0, tk.END)
+            for category in self.categories:
+                category_list.insert(tk.END, category.get("name", ""))
+
+        def get_selected_category():
+            selection = category_list.curselection()
+            if not selection:
+                show_error("Error", "Select a category first")
+                return None
+            idx = selection[0]
+            if idx >= len(self.categories):
+                return None
+            return self.categories[idx]
+
+        def add_category():
+            name = show_input_dialog("Add Category", "Category name:")
+            if name is None:
+                return
+            name = name.strip()
+            if not name:
+                show_error("Error", "Category name is required")
+                return
+            try:
+                self.api_client.create_category(name)
+                self.load_categories()
+                refresh_listbox()
+                self.load_products()
+                show_success("Success", "Category added successfully")
+            except APIError as e:
+                show_error("Error", f"Failed to add category: {str(e)}")
+
+        def rename_category():
+            category = get_selected_category()
+            if not category:
+                return
+            new_name = show_input_dialog("Rename Category", "New category name:")
+            if new_name is None:
+                return
+            new_name = new_name.strip()
+            if not new_name:
+                show_error("Error", "Category name is required")
+                return
+            try:
+                self.api_client.update_category(category.get("id"), new_name)
+                self.load_categories()
+                refresh_listbox()
+                self.load_products()
+                show_success("Success", "Category renamed successfully")
+            except APIError as e:
+                show_error("Error", f"Failed to rename category: {str(e)}")
+
+        def remove_category():
+            category = get_selected_category()
+            if not category:
+                return
+            category_name = category.get("name", "")
+            if not show_confirmation("Confirm Delete", f"Delete category '{category_name}'?"):
+                return
+            try:
+                self.api_client.delete_category(category.get("id"))
+                self.load_categories()
+                refresh_listbox()
+                self.load_products()
+                show_success("Success", "Category deleted successfully")
+            except APIError as e:
+                show_error("Error", f"Failed to delete category: {str(e)}")
+
+        actions = tk.Frame(dialog, bg=COLOR_LIGHT)
+        actions.pack(fill=tk.X, padx=10, pady=(0, 10))
+        tk.Button(actions, text="Add", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=add_category, width=10).pack(side=tk.LEFT, padx=5)
+        tk.Button(actions, text="Rename", bg=COLOR_WARNING, fg=COLOR_WHITE, command=rename_category, width=10).pack(side=tk.LEFT, padx=5)
+        tk.Button(actions, text="Delete", bg=COLOR_DANGER, fg=COLOR_WHITE, command=remove_category, width=10).pack(side=tk.LEFT, padx=5)
+        tk.Button(actions, text="Close", command=dialog.destroy, width=10).pack(side=tk.RIGHT, padx=5)
+
+        refresh_listbox()
     
     def setup_ui(self):
         """Setup admin dashboard UI"""
@@ -56,17 +179,20 @@ class AdminDashboard(tk.Frame):
         self.product_search.pack(side=tk.LEFT, padx=PADDING_SMALL)
         self.product_search.bind("<KeyRelease>", lambda e: self.filter_products())
         
-        add_btn = tk.Button(controls, text="➕ Add Product", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.add_product, cursor="hand2")
+        add_btn = tk.Button(controls, text="Add Product", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.add_product, cursor="hand2")
         add_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        edit_btn = tk.Button(controls, text="✏️ Edit", bg=COLOR_WARNING, fg=COLOR_WHITE, command=self.edit_product, cursor="hand2")
+        edit_btn = tk.Button(controls, text="Edit", bg=COLOR_WARNING, fg=COLOR_WHITE, command=self.edit_product, cursor="hand2")
         edit_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        delete_btn = tk.Button(controls, text="🗑️ Delete", bg=COLOR_DANGER, fg=COLOR_WHITE, command=self.delete_product, cursor="hand2")
+        delete_btn = tk.Button(controls, text="Delete", bg=COLOR_DANGER, fg=COLOR_WHITE, command=self.delete_product, cursor="hand2")
         delete_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        refresh_btn = tk.Button(controls, text="🔄 Refresh", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.load_products, cursor="hand2")
+        refresh_btn = tk.Button(controls, text="Refresh", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.load_products, cursor="hand2")
         refresh_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
+
+        categories_btn = tk.Button(controls, text="Categories", bg=COLOR_SECONDARY, fg=COLOR_WHITE, command=self.manage_categories, cursor="hand2")
+        categories_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
         # Products tree
         self.products_tree = ttk.Treeview(parent, columns=("Name", "Price", "Stock", "Category"), height=TABLE_HEIGHT)
@@ -90,16 +216,16 @@ class AdminDashboard(tk.Frame):
         controls = tk.Frame(parent, bg=COLOR_LIGHT)
         controls.pack(fill=tk.X, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
         
-        add_btn = tk.Button(controls, text="➕ Add User", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.add_user, cursor="hand2")
+        add_btn = tk.Button(controls, text="Add User", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.add_user, cursor="hand2")
         add_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        edit_btn = tk.Button(controls, text="✏️ Edit", bg=COLOR_WARNING, fg=COLOR_WHITE, command=self.edit_user, cursor="hand2")
+        edit_btn = tk.Button(controls, text="Edit", bg=COLOR_WARNING, fg=COLOR_WHITE, command=self.edit_user, cursor="hand2")
         edit_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        delete_btn = tk.Button(controls, text="🗑️ Delete", bg=COLOR_DANGER, fg=COLOR_WHITE, command=self.delete_user, cursor="hand2")
+        delete_btn = tk.Button(controls, text="Delete", bg=COLOR_DANGER, fg=COLOR_WHITE, command=self.delete_user, cursor="hand2")
         delete_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        refresh_btn = tk.Button(controls, text="🔄 Refresh", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.load_users, cursor="hand2")
+        refresh_btn = tk.Button(controls, text="Refresh", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.load_users, cursor="hand2")
         refresh_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
         # Users tree
@@ -122,13 +248,13 @@ class AdminDashboard(tk.Frame):
         controls = tk.Frame(parent, bg=COLOR_LIGHT)
         controls.pack(fill=tk.X, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
         
-        daily_btn = tk.Button(controls, text="📊 Daily Report", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.show_daily_report, cursor="hand2")
+        daily_btn = tk.Button(controls, text="Daily Report", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.show_daily_report, cursor="hand2")
         daily_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        monthly_btn = tk.Button(controls, text="📈 Monthly Report", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.show_monthly_report, cursor="hand2")
+        monthly_btn = tk.Button(controls, text="Monthly Report", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.show_monthly_report, cursor="hand2")
         monthly_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
-        export_btn = tk.Button(controls, text="💾 Export", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.export_report, cursor="hand2")
+        export_btn = tk.Button(controls, text="Export", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.export_report, cursor="hand2")
         export_btn.pack(side=tk.LEFT, padx=PADDING_SMALL)
         
         # Reports text area
@@ -139,59 +265,19 @@ class AdminDashboard(tk.Frame):
         """Load and display products"""
         try:
             response = self.api_client.get_products()
-            print(f"DEBUG: Full response: {response}")
-            print(f"DEBUG: Response type: {type(response)}")
-            
             for item in self.products_tree.get_children():
                 self.products_tree.delete(item)
 
-            # Try different possible response formats
-            products = None
-            
-            if isinstance(response, dict):
-                # Try different keys
-                if "products" in response:
-                    products = response.get("products", [])
-                    print(f"DEBUG: Found 'products' key: {products}")
-                elif "data" in response:
-                    data = response.get("data", {})
-                    if isinstance(data, dict) and "items" in data:
-                        products = data.get("items", [])
-                        print(f"DEBUG: Found 'data.items' key: {products}")
-                    elif isinstance(data, list):
-                        products = data
-                        print(f"DEBUG: Found 'data' as list: {products}")
-                elif isinstance(response, list):
-                    products = response
-                    print(f"DEBUG: Response is list: {products}")
-            elif isinstance(response, list):
-                products = response
-                print(f"DEBUG: Response is direct list: {products}")
-            
-            if not products:
-                print(f"DEBUG: No products found! Response keys: {response.keys() if isinstance(response, dict) else 'N/A'}")
-                show_error("Error", "No products found in response")
-                return
-            
+            products = self._extract_products(response)
             for product in products:
-                print(f"DEBUG: Processing product: {product}")
                 self.products_tree.insert("", tk.END, text=product.get("id", ""), values=(
                     product.get("name", ""),
                     format_currency(product.get("price", 0)),
                     product.get("quantity_in_stock", 0),
                     product.get("category", "N/A")
                 ))
-            
-            print(f"DEBUG: Loaded {len(products)} products")
-            
         except APIError as e:
-            print(f"DEBUG: APIError: {e}")
             show_error("Error", f"Failed to load products: {str(e)}")
-        except Exception as e:
-            print(f"DEBUG: Unexpected error: {e}")
-            import traceback
-            traceback.print_exc()
-            show_error("Error", f"Error loading products: {str(e)}")
     
     def load_users(self):
         """Load and display users"""
@@ -200,7 +286,7 @@ class AdminDashboard(tk.Frame):
             for item in self.users_tree.get_children():
                 self.users_tree.delete(item)
 
-            users = response.get("users", [])
+            users = self._extract_users(response)
             for user in users:
                 self.users_tree.insert("", tk.END, text=user.get("id", ""), values=(
                     user.get("username", ""),
@@ -215,7 +301,7 @@ class AdminDashboard(tk.Frame):
         search_term = self.product_search.get().lower()
         try:
             response = self.api_client.get_products()
-            products = response.get("products", [])
+            products = self._extract_products(response)
             filtered = [p for p in products if search_term in p.get("name", "").lower()]
             
             for item in self.products_tree.get_children():
@@ -250,8 +336,15 @@ class AdminDashboard(tk.Frame):
         
         # Category
         tk.Label(dialog, text="Category:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        category_entry = tk.Entry(dialog, width=30)
-        category_entry.grid(row=2, column=1, padx=10, pady=5)
+        try:
+            self.load_categories()
+        except APIError as e:
+            show_error("Error", f"Failed to load categories: {str(e)}")
+            dialog.destroy()
+            return
+        category_var = tk.StringVar(value=(self.get_category_names()[0] if self.get_category_names() else "General"))
+        category_combo = ttk.Combobox(dialog, width=27, textvariable=category_var, state="readonly", values=self.get_category_names())
+        category_combo.grid(row=2, column=1, padx=10, pady=5)
         
         # Price
         tk.Label(dialog, text="Price:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
@@ -268,7 +361,7 @@ class AdminDashboard(tk.Frame):
                 # Get values
                 name = name_entry.get()
                 sku = sku_entry.get()
-                category = category_entry.get() or "General"
+                category = category_var.get() or "General"
                 price_str = price_entry.get()
                 stock_str = stock_entry.get()
                 
@@ -290,7 +383,7 @@ class AdminDashboard(tk.Frame):
                     sku=sku,
                     price=price,
                     category=category,
-                    quantity=quantity
+                    quantity_in_stock=quantity
                 )
                 
                 show_success("Success", "Product added successfully!")
@@ -316,7 +409,7 @@ class AdminDashboard(tk.Frame):
         item = self.products_tree.item(selection[0])
         product_id = item["text"]
         product_name = item["values"][0]
-        product_price = item["values"][1].replace("$", "")
+        product_price = item["values"][1].replace("Ksh ", "").replace(",", "").strip()
         product_stock = item["values"][2]
         product_category = item["values"][3]
         
@@ -331,9 +424,18 @@ class AdminDashboard(tk.Frame):
         name_entry.grid(row=0, column=1, padx=10, pady=5)
         
         tk.Label(dialog, text="Category:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        category_entry = tk.Entry(dialog, width=30)
-        category_entry.insert(0, product_category)
-        category_entry.grid(row=1, column=1, padx=10, pady=5)
+        try:
+            self.load_categories()
+        except APIError as e:
+            show_error("Error", f"Failed to load categories: {str(e)}")
+            dialog.destroy()
+            return
+        category_names = self.get_category_names()
+        if product_category and product_category not in category_names:
+            category_names = sorted(category_names + [product_category])
+        category_var = tk.StringVar(value=(product_category or category_names[0]))
+        category_combo = ttk.Combobox(dialog, width=27, textvariable=category_var, state="readonly", values=category_names)
+        category_combo.grid(row=1, column=1, padx=10, pady=5)
         
         tk.Label(dialog, text="Price:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         price_entry = tk.Entry(dialog, width=30)
@@ -348,7 +450,7 @@ class AdminDashboard(tk.Frame):
         def save():
             try:
                 name = name_entry.get()
-                category = category_entry.get()
+                category = category_var.get()
                 price = float(price_entry.get())
                 quantity = int(stock_entry.get())
                 
@@ -357,7 +459,7 @@ class AdminDashboard(tk.Frame):
                     name=name,
                     category=category,
                     price=price,
-                    quantity=quantity
+                    quantity_in_stock=quantity
                 )
                 
                 show_success("Success", "Product updated successfully!")
@@ -411,8 +513,8 @@ class AdminDashboard(tk.Frame):
         password_entry.grid(row=2, column=1, padx=10, pady=5)
         
         tk.Label(dialog, text="Role:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        role_var = tk.StringVar(value="cashier")
-        role_combo = ttk.Combobox(dialog, textvariable=role_var, values=["cashier", "manager", "admin"], width=28, state="readonly")
+        role_var = tk.StringVar(value="Cashier")
+        role_combo = ttk.Combobox(dialog, textvariable=role_var, values=["Cashier", "Manager", "Admin"], width=28, state="readonly")
         role_combo.grid(row=3, column=1, padx=10, pady=5)
         
         def save():

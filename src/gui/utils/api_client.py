@@ -1,9 +1,6 @@
-"""
-API Client for POS System GUI
-Handles all communication with Flask backend API
-"""
+"""API client for POS System GUI and NiceGUI frontend."""
+
 import requests
-import json
 from typing import Optional, Dict, List, Any
 from ..config import API_BASE_URL, API_TIMEOUT
 
@@ -22,6 +19,19 @@ class APIClient:
         self.timeout = API_TIMEOUT
         self.token = None
         self.user_data = None
+
+    @staticmethod
+    def _extract_items(response: Dict[str, Any], key: str) -> List[Dict[str, Any]]:
+        """Support both legacy and envelope API response shapes."""
+        if isinstance(response.get(key), list):
+            return response.get(key, [])
+        data = response.get("data") or {}
+        if isinstance(data, dict):
+            if isinstance(data.get(key), list):
+                return data.get(key, [])
+            if isinstance(data.get("items"), list):
+                return data.get("items", [])
+        return []
     
     def _headers(self) -> Dict[str, str]:
         """Get headers with authorization token"""
@@ -70,6 +80,11 @@ class APIClient:
         """Register new user"""
         data = {"username": username, "email": email, "password": password, "role": role}
         return self._request("POST", "/auth/register", data)
+
+    def forgot_password(self, username: str, email: str, new_password: str) -> Dict[str, Any]:
+        """Reset a user's password with username and email verification."""
+        data = {"username": username, "email": email, "new_password": new_password}
+        return self._request("POST", "/auth/forgot-password", data)
     
     def logout(self):
         """Clear local token"""
@@ -79,22 +94,31 @@ class APIClient:
     # Product Methods
     def get_products(self, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
         """Get paginated list of products"""
-        return self._request("GET", f"/products?page={page}&per_page={per_page}")
+        response = self._request("GET", f"/products?page={page}&per_page={per_page}")
+        response["products"] = self._extract_items(response, "products")
+        return response
     
     def get_product(self, product_id: int) -> Dict[str, Any]:
         """Get single product by ID"""
         return self._request("GET", f"/products/{product_id}")
     
-    def create_product(self, name: str, price: float, category: str, quantity: int, 
-                      barcode: str = "", sku: str = "") -> Dict[str, Any]:
-        """Create new product"""
+    def create_product(
+        self,
+        name: str,
+        sku: str,
+        price: float,
+        quantity_in_stock: int = 0,
+        category: str = "",
+        description: str = "",
+    ) -> Dict[str, Any]:
+        """Create new product."""
         data = {
             "name": name,
+            "sku": sku,
             "price": price,
             "category": category,
-            "quantity": quantity,
-            "barcode": barcode,
-            "sku": sku
+            "quantity_in_stock": quantity_in_stock,
+            "description": description,
         }
         return self._request("POST", "/products", data)
     
@@ -105,6 +129,25 @@ class APIClient:
     def delete_product(self, product_id: int) -> Dict[str, Any]:
         """Delete product"""
         return self._request("DELETE", f"/products/{product_id}")
+
+    # Category Methods
+    def get_categories(self) -> Dict[str, Any]:
+        """Get list of product categories."""
+        response = self._request("GET", "/categories")
+        response["categories"] = self._extract_items(response, "categories")
+        return response
+
+    def create_category(self, name: str) -> Dict[str, Any]:
+        """Create a product category."""
+        return self._request("POST", "/categories", {"name": name})
+
+    def update_category(self, category_id: int, name: str) -> Dict[str, Any]:
+        """Rename a product category."""
+        return self._request("PUT", f"/categories/{category_id}", {"name": name})
+
+    def delete_category(self, category_id: int) -> Dict[str, Any]:
+        """Delete a product category."""
+        return self._request("DELETE", f"/categories/{category_id}")
     
     # Sales Methods
     def create_sale(self, items: List[Dict], discount: float = 0, 
@@ -118,9 +161,9 @@ class APIClient:
         }
         return self._request("POST", "/sales", data)
     
-    def get_sales(self, page: int = 1, limit: int = 20) -> Dict[str, Any]:
-        """Get paginated list of sales"""
-        return self._request("GET", f"/sales?page={page}&limit={limit}")
+    def get_sales(self, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
+        """Get paginated list of sales."""
+        return self._request("GET", f"/sales?page={page}&per_page={per_page}")
     
     def get_sale(self, sale_id: int) -> Dict[str, Any]:
         """Get single sale by ID"""

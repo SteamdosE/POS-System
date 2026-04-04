@@ -1,7 +1,9 @@
 """
 Main POS Application Controller
 """
+import os
 import tkinter as tk
+from tkinter import messagebox
 from .login import LoginScreen
 from .cashier import CashierScreen
 from .admin_dashboard import AdminDashboard
@@ -55,8 +57,7 @@ class POSApplication:
         logout_btn.pack(side=tk.RIGHT, padx=PADDING_MEDIUM, pady=PADDING_SMALL)
         
         # Cashier screen
-        self.current_screen = CashierScreen(self.current_frame, self.api_client)
-        self.current_screen.pack(fill=tk.BOTH, expand=True)
+        self._mount_screen(CashierScreen)
     
     def show_admin_dashboard(self):
         """Show admin dashboard"""
@@ -72,8 +73,7 @@ class POSApplication:
         logout_btn.pack(side=tk.RIGHT, padx=PADDING_MEDIUM, pady=PADDING_SMALL)
         
         # Admin dashboard
-        self.current_screen = AdminDashboard(self.current_frame, self.api_client)
-        self.current_screen.pack(fill=tk.BOTH, expand=True)
+        self._mount_screen(AdminDashboard)
     
     def show_manager_dashboard(self):
         """Show manager dashboard"""
@@ -89,8 +89,32 @@ class POSApplication:
         logout_btn.pack(side=tk.RIGHT, padx=PADDING_MEDIUM, pady=PADDING_SMALL)
         
         # Manager dashboard
-        self.current_screen = ManagerDashboard(self.current_frame, self.api_client)
-        self.current_screen.pack(fill=tk.BOTH, expand=True)
+        self._mount_screen(ManagerDashboard)
+
+    def _mount_screen(self, screen_cls):
+        """Create and mount a child screen with fallback UI on failure."""
+        try:
+            self.current_screen = screen_cls(self.current_frame, self.api_client)
+            self.current_screen.pack(fill=tk.BOTH, expand=True)
+        except Exception as exc:
+            self.current_screen = None
+            fallback = tk.Frame(self.current_frame, bg=COLOR_LIGHT)
+            fallback.pack(fill=tk.BOTH, expand=True)
+            tk.Label(
+                fallback,
+                text="Failed to load screen",
+                bg=COLOR_LIGHT,
+                fg=COLOR_DANGER,
+                font=FONT_HEADING,
+            ).pack(pady=(30, 8))
+            tk.Label(
+                fallback,
+                text=str(exc),
+                bg=COLOR_LIGHT,
+                fg=COLOR_DARK,
+                font=FONT_NORMAL,
+            ).pack()
+            messagebox.showerror("Screen Error", f"Unable to load screen: {exc}")
     
     def logout(self):
         """Logout user"""
@@ -106,7 +130,25 @@ class POSApplication:
 
 
 def main():
-    """Main entry point for the POS application"""
+    """Main entry point for the POS application.
+
+    Prefer the NiceGUI frontend when it is installed so the app launches
+    from the main GUI entrypoint instead of the separate web route.
+    """
+    if os.environ.get("POS_USE_LEGACY_GUI") == "1":
+        root = tk.Tk()
+        app = POSApplication(root)
+        root.mainloop()
+        return
+
+    try:
+        from .nicegui_app import run as run_nicegui
+
+        run_nicegui()
+        return
+    except ImportError:
+        pass
+
     root = tk.Tk()
     app = POSApplication(root)
     root.mainloop()

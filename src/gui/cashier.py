@@ -118,7 +118,7 @@ class CashierScreen(tk.Frame):
         payment_combo = ttk.Combobox(checkout_frame, textvariable=self.payment_var, values=["cash", "card", "mobile"], state="readonly", width=15)
         payment_combo.pack(side=tk.LEFT, padx=5)
         
-        checkout_btn = tk.Button(checkout_frame, text="💳 Checkout", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.checkout, cursor="hand2", font=FONT_NORMAL)
+        checkout_btn = tk.Button(checkout_frame, text="Checkout", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=self.checkout, cursor="hand2", font=FONT_NORMAL)
         checkout_btn.pack(side=tk.RIGHT, padx=5)
     
     def load_products(self):
