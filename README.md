@@ -13,6 +13,9 @@ The POS system is designed to streamline retail transactions with a user-friendl
 ### Requirements
 - Python 3.9+
 - pip
+- **tkinter** (bundled with Python on Windows/macOS; on Linux install the system package):
+  - Ubuntu/Debian: `sudo apt-get install python3-tk`
+  - Fedora/RHEL: `sudo dnf install python3-tkinter`
 
 ### Steps
 1. Clone the repository: `git clone https://github.com/SteamdosE/POS-System.git`
@@ -20,8 +23,12 @@ The POS system is designed to streamline retail transactions with a user-friendl
 3. Create and activate a virtual environment:
    - Windows: `python -m venv venv` then `venv\Scripts\activate`
    - macOS/Linux: `python -m venv venv` then `source venv/bin/activate`
-4. Install dependencies: `pip install -r requirements.txt`
-5. Start the backend server: `python -m src.app`
+4. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   pip install -r requirements_gui.txt
+   ```
+5. Start the backend server: `python start_backend.py`
 
 The app uses **SQLite** for storage (`pos_system.db` is created automatically on first run).
 
