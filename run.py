@@ -3,15 +3,20 @@
 POS System - Desktop GUI Entry Point
 """
 import sys
-import os
-from pathlib import Path
-
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 try:
     import tkinter as tk
-    from gui.main import POSApplication
+except ImportError:
+    print("Error: tkinter is not installed.")
+    print("Install it with your system package manager:")
+    print("  Ubuntu/Debian: sudo apt-get install python3-tk")
+    print("  Fedora/RHEL:   sudo dnf install python3-tkinter")
+    print("  macOS (brew):  brew install python-tk")
+    print("  Windows:       re-run the Python installer and enable the 'tcl/tk' option")
+    sys.exit(1)
+
+try:
+    from src.gui.main import POSApplication
 except ImportError as e:
     print(f"Error: Missing required dependency - {e}")
     print("Please install dependencies: pip install -r requirements_gui.txt")
