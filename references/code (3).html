@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Orchestra POS | Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#6ffbbe",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-variant": "#e0e3e5",
+                    "on-secondary-fixed": "#0d1c2e",
+                    "tertiary": "#004e33",
+                    "primary-container": "#0050d3",
+                    "on-primary": "#ffffff",
+                    "background": "#f7f9fb",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#d5e3fc",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-container": "#5debaf",
+                    "outline": "#737685",
+                    "surface-container": "#eceef0",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "on-secondary-fixed-variant": "#3a485b",
+                    "inverse-on-surface": "#eff1f3",
+                    "tertiary-container": "#006846",
+                    "surface-tint": "#0053db",
+                    "on-error-container": "#93000a",
+                    "error": "#ba1a1a",
+                    "on-secondary-container": "#57657a",
+                    "surface-container-highest": "#e0e3e5",
+                    "outline-variant": "#c3c6d6",
+                    "on-surface": "#191c1e",
+                    "on-background": "#191c1e",
+                    "secondary": "#515f74",
+                    "surface-bright": "#f7f9fb",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-dim": "#d8dadc",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-tertiary-fixed": "#002113",
+                    "surface-container-high": "#e6e8ea",
+                    "inverse-primary": "#b4c5ff",
+                    "secondary-fixed-dim": "#b9c7df",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "inverse-surface": "#2d3133",
+                    "error-container": "#ffdad6",
+                    "surface": "#f7f9fb",
+                    "on-surface-variant": "#434654",
+                    "on-primary-fixed": "#00174b",
+                    "secondary-fixed": "#d5e3fc",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#c5d2ff",
+                    "primary": "#003ba1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Manrope', sans-serif; }
+        .glass-keypad {
+            background: rgba(224, 227, 229, 0.6);
+            backdrop-filter: blur(24px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex overflow-hidden">
+<!-- SideNavBar (JSON Component) -->
+<aside class="hidden md:flex flex-col h-screen w-64 bg-slate-100 dark:bg-slate-900 p-4 border-r-0">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Orchestra POS</h1>
+<p class="text-xs text-slate-500 font-medium mt-1">The Orchestrated Workspace</p>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Active: Terminal -->
+<a class="flex items-center gap-3 px-3 py-2.5 bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm rounded-lg font-manrope text-sm font-medium scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+                Terminal
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors font-manrope text-sm font-medium" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+                Inventory
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors font-manrope text-sm font-medium" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors font-manrope text-sm font-medium" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                Customers
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors font-manrope text-sm font-medium" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+                Users &amp; Roles
+            </a>
+</nav>
+<div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-800">
+<button class="w-full py-3 px-4 bg-primary text-on-primary rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+                New Transaction
+            </button>
+<div class="mt-6 flex items-center gap-3 px-2">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="close up headshot of a smiling professional store manager in a clean retail environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB03BDRqNM8ILltWU3rDdosG3y-bRIgjEq8loadyXBsDETZyUWz4huLyUWemeJ1viVhKWPu7SCKJ3FZxJ1tIVLfdPL4qM0dcu1Phhd0Zb1eDtSfacBSqWe2wNrBqDxy_Zs63aDpkTp__su9gHlK8D_YybU-7sjmJKsXOYhpe8yhgwUDH0UOnwoC7Z4Sw5ZJihAjATJK_XGT15vBOu-cATu4u9zgpv1XND4k24N3GfHne7NXQl0fbwpOzETB6ivL7QtBECPFJmeGqQ"/>
+<div class="overflow-hidden">
+<p class="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">Admin Profile</p>
+<p class="text-xs text-slate-500 truncate">Shift #402</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
+<!-- TopNavBar (JSON Component) -->
+<header class="flex items-center justify-between px-6 w-full h-16 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 shrink-0">
+<div class="flex items-center gap-4">
+<span class="text-lg font-black text-slate-900 dark:text-slate-50 brand-font">Orchestra POS</span>
+<div class="h-4 w-px bg-slate-200"></div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim shadow-[0_0_8px_rgba(78,222,163,0.6)]"></span>
+<span class="text-xs font-bold text-on-surface-variant tracking-wider uppercase">System Ready</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative w-80">
+<input class="w-full bg-surface-container-high border-none rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-primary" placeholder="Scan barcode or type name..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-2 text-slate-400" data-icon="barcode_scanner">barcode_scanner</span>
+</div>
+<div class="flex items-center gap-4 text-slate-500">
+<button class="hover:text-blue-600 transition-opacity opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+</button>
+<button class="relative hover:text-blue-600 transition-opacity opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<img class="w-8 h-8 rounded-full border border-slate-100 shadow-sm" data-alt="professional user avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlN7qcNmdO-2wbsphZ_L3VCLjdSdtHwXboOKPmm6XhQk2UH6jEq4GZzBq_Ntg9yNbcWz82h4DMvOaOFOVnlLJoWyRy9cPc9NuV0xYwAxyjjm8Z5lrP-pPH7mF6dvcrr6HyGU7YpargVpsatX4fP9HDC-Y1nrufB-inuFbtkE8uel8VKFPeDAy1TB8-MHUoFyZkkd7i-MymYEs0_kW4K6oCTYz8OGu-JDmyBIyfhSrwoI0995XxEowUZoOqfFcGc2iIBsLB7ccdsw"/>
+</div>
+</div>
+</header>
+<!-- POS Workspace -->
+<section class="flex-1 flex overflow-hidden">
+<!-- Left: Product Grid (Bento Style) -->
+<div class="flex-1 p-6 overflow-y-auto">
+<div class="flex items-center justify-between mb-8">
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-primary-container text-on-primary-container text-sm font-bold rounded-full">All Items</button>
+<button class="px-4 py-2 hover:bg-surface-container-low text-sm font-medium rounded-full">Apparel</button>
+<button class="px-4 py-2 hover:bg-surface-container-low text-sm font-medium rounded-full">Footwear</button>
+<button class="px-4 py-2 hover:bg-surface-container-low text-sm font-medium rounded-full">Accessories</button>
+</div>
+<div class="text-sm font-semibold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="filter_list">filter_list</span>
+                        Sort by: Newest
+                    </div>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+<!-- Product Card -->
+<div class="bg-surface-container-low p-4 rounded-lg group hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col gap-3">
+<div class="relative aspect-square overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover transition-transform group-hover:scale-110" data-alt="minimalist premium silver watch on clean grey background with soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4RZlGlKyDjCdgUTUS6fnaJJ4vl43uJJy3AQDf7-Usa34JImMjuqt7qflBxoPOgrj8OTgyvojTkCGGBSPyB4FKHkPVEFEb1RaenqzjUMMLDhzTPU0G_CrWZT5xqm_4pe1CO3x66UXcTVW6GsPh-mwSzp_8avOpZpX4KldOvdSxQGu410s3emgEQNAF4tiZv-pMtag1xzPNHb6HBxIaK24sciTMKJNDiCTknu50tTPrnTyqiLnOukuwfotmALy3MXqt63slUq_xJw"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold rounded-full">AVAILABLE</div>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Precision Chrono X</h3>
+<p class="text-xs text-on-surface-variant">SKU: WA-9023</p>
+<p class="mt-2 text-base font-bold text-primary">$299.00</p>
+</div>
+</div>
+<!-- Product Card -->
+<div class="bg-surface-container-low p-4 rounded-lg group hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col gap-3">
+<div class="relative aspect-square overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover transition-transform group-hover:scale-110" data-alt="vibrant red athletic sneaker isolated on a white background with dramatic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR8c2HgmsfxQCpFquevQqgx75cIj0JwexS3ZzkH05_K4B-cMSb7N4NhjJTYgn3RdhfDjN-in_nBFFXiHuZeUqig58-QvkxpUpjVqyYKRMyO5o9F2jruaqYef7LucCvIAjAycg8X1-IaFry0A9kL-zd65yRF6Eqz6JJQeCthVArXnJxNV_HrWH3PFLO9NYeLoOMQddqFdR8a8IaVB0DWzAurayPJT1nRqVbt0ebXt3khcESHOKbWGJPqBuH1QeJd9ZAghVrkgMSlw"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-error-container text-on-error-container text-[10px] font-bold rounded-full">LOW STOCK</div>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Veloce Runner Red</h3>
+<p class="text-xs text-on-surface-variant">SKU: FT-4412</p>
+<p class="mt-2 text-base font-bold text-primary">$120.00</p>
+</div>
+</div>
+<!-- Product Card -->
+<div class="bg-surface-container-low p-4 rounded-lg group hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col gap-3">
+<div class="relative aspect-square overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover transition-transform group-hover:scale-110" data-alt="black noise cancelling headphones on a minimalist wooden surface with studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdLisOHrLOWazaHx473bHb3PKvCOZjsF6e8TIsIQu22znXZQCXY6qnvQkq8Y0uze9SOEw3AmLv07KInHt6fCBGccCh0g0U6w7JEHgdfMUlY9V38ftVnpA5ZtZSWrjdgYdywFQkAgojOrsO3jvP2a1Tg_BPKayrR_RF6r75LZ91K5HKANpXq5_91_Kd7wXm_nT3UR2Rwd5MTXo45aUDBXWjWe5JTG6sTzrZsf3ifpFkuJsR7GURhhds9btHfpJg3fbCR1tUIoHVxw"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold rounded-full">AVAILABLE</div>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Studio Silence Gen 3</h3>
+<p class="text-xs text-on-surface-variant">SKU: AU-8821</p>
+<p class="mt-2 text-base font-bold text-primary">$349.00</p>
+</div>
+</div>
+<!-- Product Card (Asymmetric Layout Spanner) -->
+<div class="bg-surface-container-low p-4 rounded-lg group hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col gap-3">
+<div class="relative aspect-square overflow-hidden rounded-lg">
+<img class="w-full h-full object-cover transition-transform group-hover:scale-110" data-alt="high fashion leather handbag in tan brown against a cream background with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATqdYMGbHmcUV2Uu2iFWm17dSzbfxgAQ8bx_--GJocbZ_g5t92MmW03E0o75Q_NE1qmh0ekJF_1VQ-LARBwRzURjTbr34gvMsbn5SAmXSZ6lR3RBBYre4Vzo9nW4iStvq-U9KrWU4_702Hj28xyfBYBw5VmDyf0SUBM0gGsDyZU6IQRNic-Tw13Gt1nJ33fgRjWU6ZdMFkTaoldgODn3F2HHQ1dBrkHaB7xuGlJSY9i4aXr5kvxJzis1Us4M_js6Zj3URZWV_dFg"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold rounded-full">AVAILABLE</div>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Classic Satchel Leather</h3>
+<p class="text-xs text-on-surface-variant">SKU: AC-1209</p>
+<p class="mt-2 text-base font-bold text-primary">$185.00</p>
+</div>
+</div>
+<!-- Additional Rows placeholders -->
+<div class="bg-surface-container-low p-4 rounded-lg flex flex-col gap-3 opacity-60">
+<div class="aspect-square bg-surface-container-high rounded-lg animate-pulse"></div>
+<div class="h-4 w-2/3 bg-surface-container-high rounded"></div>
+<div class="h-4 w-1/3 bg-surface-container-high rounded"></div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar: Shopping Cart -->
+<aside class="w-96 bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 flex flex-col shadow-2xl z-10">
+<div class="p-6 shrink-0 border-b border-slate-50 dark:border-slate-800">
+<div class="flex justify-between items-center mb-1">
+<h2 class="text-xl font-extrabold brand-font text-on-surface">Current Order</h2>
+<button class="text-error text-xs font-bold hover:underline">CLEAR ALL</button>
+</div>
+<p class="text-xs text-on-surface-variant font-medium">Transaction #99104-B</p>
+</div>
+<!-- Cart Items -->
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Cart Item -->
+<div class="flex items-start gap-3 p-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<img class="w-14 h-14 rounded-md object-cover" data-alt="product preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjtbE1OftW2rYhSXXfWIeQduSdcB6E9fTDj4iV6e7AOSRp0_7nBOkq2N4L3UZomg7CjhUdttVmlQCzXumv96qgsVE8zsTfvPiIyjfs7JiUajAJCWOmqj_WrME7352MXmmnXcD5U6Hq67AxUTKPxyTwdGaKlqNXaylNWjnx1aY-iuGmXqPz1yjCgd9lVLpIMes0KfRjvynxA0M1ooibIBn4nJpFzpteQg0FxsAWxj9c3HEQ3y-0fUIc_ZgRDGLTusVhJB8-S40_KA"/>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="text-sm font-bold text-on-surface truncate">Precision Chrono X</h4>
+<span class="text-sm font-bold">$299.00</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-3">Qty: 1</p>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container-high active:scale-95 transition-all">
+<span class="material-symbols-outlined text-base" data-icon="remove">remove</span>
+</button>
+<span class="w-10 text-center text-sm font-bold">1</span>
+<button class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container-high active:scale-95 transition-all">
+<span class="material-symbols-outlined text-base" data-icon="add">add</span>
+</button>
+<button class="ml-auto text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Cart Item -->
+<div class="flex items-start gap-3 p-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<img class="w-14 h-14 rounded-md object-cover" data-alt="product preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA73g71dO8OviDiyt2j55eBmtKdLAnAxyqNp1bjYs9LMvJG3WiqS-jcyZpumOvhIbDsIF_mowy9GwIkCzXofUl0B4GQ11VHknoiRmVkgV6EtCSnhS2o-QbGJfZMntQTJ8F6LAia1MIntcgdy7yZVCh7Nfp2n4pqVipeUhxA3_lg8FAzPELGuhcoceFlTmw2r-J6y5GlAK8nT5gFzhzUd-QkAPS5m5dPJa-kWYC2Gj5EwDbwzCs5k8moYtRagyf4VyRsHXV265s9_w"/>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="text-sm font-bold text-on-surface truncate">Veloce Runner Red</h4>
+<span class="text-sm font-bold">$120.00</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-3">Qty: 2</p>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-base" data-icon="remove">remove</span>
+</button>
+<span class="w-10 text-center text-sm font-bold">2</span>
+<button class="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-base" data-icon="add">add</span>
+</button>
+<button class="ml-auto text-on-surface-variant hover:text-error">
+<span class="material-symbols-outlined text-lg" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary & Checkout -->
+<div class="bg-surface-container-low p-6 border-t border-slate-100 space-y-4">
+<div class="flex items-center justify-between group">
+<div class="relative flex-1 mr-4">
+<input class="w-full bg-surface-container-lowest border-none rounded-md text-xs py-2 px-3 focus:ring-1 focus:ring-primary" placeholder="Apply Discount Code" type="text"/>
+<span class="material-symbols-outlined absolute right-2 top-1.5 text-slate-400 text-base" data-icon="sell">sell</span>
+</div>
+<button class="text-xs font-bold text-primary px-3 py-2 bg-primary-fixed rounded-md">APPLY</button>
+</div>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between text-on-surface-variant">
+<span>Subtotal</span>
+<span>$539.00</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Tax (8%)</span>
+<span>$43.12</span>
+</div>
+<div class="flex justify-between text-tertiary-container font-bold bg-tertiary-container/10 px-2 py-1 rounded">
+<span>Promotional Discount</span>
+<span>-$20.00</span>
+</div>
+<div class="flex justify-between items-end pt-4 border-t border-slate-200">
+<span class="text-sm font-bold text-on-surface">TOTAL</span>
+<span class="text-3xl font-black text-on-surface brand-font">$562.12</span>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-4 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+                        Complete Checkout
+                    </button>
+<button class="w-full bg-white border border-outline-variant text-on-surface py-3 rounded-xl font-bold text-sm hover:bg-surface-container-high transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+                        Preview Receipt
+                    </button>
+</div>
+</aside>
+</section>
+<!-- Hardware Status Bar -->
+<footer class="h-10 bg-surface-container-high border-t border-slate-200 px-6 flex items-center justify-between text-[10px] font-bold tracking-widest text-on-surface-variant">
+<div class="flex gap-6 items-center">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]" data-icon="print">print</span>
+                    PRINTER: ONLINE
+                </div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]" data-icon="credit_card">credit_card</span>
+                    TERMINAL: CONNECTED
+                </div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]" data-icon="lan">lan</span>
+                    LATENCY: 12ms
+                </div>
+</div>
+<div class="flex items-center gap-4">
+<span>ORCHESTRA OS v4.2.0</span>
+<span class="px-2 py-0.5 bg-slate-900 text-white rounded">LIVE SYNC</span>
+</div>
+</footer>
+</main>
+<!-- Contextual FAB (Hidden on Terminal as per suppression rules in JSON mandate, but added for system completeness if user navigates) -->
+<!-- SUPPRESSED FOR TRANSACTIONAL SCREEN -->
+</body></html>
