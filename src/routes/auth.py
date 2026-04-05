@@ -86,3 +86,37 @@ def login():
 
     token = create_access_token(identity=str(user.id))
     return success_response({"user": user.to_dict(), "access_token": token}, "Login successful")
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    """Reset password using username and email verification.
+
+    Request JSON body::
+
+        {
+            "username": "string",
+            "email": "string",
+            "new_password": "string"
+        }
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return error_response("Request body must be JSON", 400)
+
+    username = data.get("username", "").strip()
+    email = data.get("email", "").strip().lower()
+    new_password = data.get("new_password", "")
+
+    if not username or not email or not new_password:
+        return error_response("Username, email, and new_password are required", 400)
+
+    user = User.query.filter_by(username=username, email=email).first()
+    if not user:
+        return error_response("No matching user found for the provided username and email", 404)
+    if not user.is_active:
+        return error_response("Account is deactivated", 403)
+
+    user.set_password(new_password)
+    db.session.commit()
+    return success_response(message="Password reset successful")
