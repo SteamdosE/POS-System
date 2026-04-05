@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customers | Orchestra POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#6ffbbe",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-variant": "#e0e3e5",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "tertiary": "#004e33",
+                        "primary-container": "#0050d3",
+                        "on-primary": "#ffffff",
+                        "background": "#f7f9fb",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#d5e3fc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#5debaf",
+                        "outline": "#737685",
+                        "surface-container": "#eceef0",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "inverse-on-surface": "#eff1f3",
+                        "tertiary-container": "#006846",
+                        "surface-tint": "#0053db",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#57657a",
+                        "surface-container-highest": "#e0e3e5",
+                        "outline-variant": "#c3c6d6",
+                        "on-surface": "#191c1e",
+                        "on-background": "#191c1e",
+                        "secondary": "#515f74",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-dim": "#d8dadc",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-high": "#e6e8ea",
+                        "inverse-primary": "#b4c5ff",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "inverse-surface": "#2d3133",
+                        "error-container": "#ffdad6",
+                        "surface": "#f7f9fb",
+                        "on-surface-variant": "#434654",
+                        "on-primary-fixed": "#00174b",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#c5d2ff",
+                        "primary": "#003ba1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden">
+<!-- SideNavBar from Shared Components JSON -->
+<aside class="hidden md:flex flex-col h-full p-4 bg-slate-100 dark:bg-slate-900 h-screen w-64 border-r-0 font-manrope text-sm font-medium">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Orchestra POS</h1>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">The Orchestrated Workspace</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+<span>Terminal</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span>Analytics</span>
+</a>
+<!-- Active Navigation for Customers -->
+<a class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm rounded-lg scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Customers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors scale-95 active:scale-100 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span>Users &amp; Roles</span>
+</a>
+</nav>
+<div class="mt-auto pt-4">
+<button class="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                New Transaction
+            </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<!-- TopNavBar from Shared Components JSON -->
+<header class="flex items-center justify-between px-6 w-full h-16 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-4">
+<h2 class="text-lg font-black text-slate-900 dark:text-slate-50 font-headline">Customers</h2>
+<div class="hidden md:flex items-center gap-2 bg-tertiary-container/10 px-3 py-1 rounded-full border border-tertiary-container/20">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed shadow-[0_0_8px_rgba(111,251,190,0.8)]"></span>
+<span class="text-[10px] font-bold text-on-tertiary-fixed uppercase tracking-wider">System Ready</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden sm:block">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-sm" data-icon="search">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-highest/50 border-none rounded-full text-sm w-64 focus:ring-2 focus:ring-primary-container transition-all" placeholder="Search Directory..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="material-symbols-outlined text-outline hover:text-primary transition-colors" data-icon="database">database</button>
+<button class="material-symbols-outlined text-outline hover:text-primary transition-colors" data-icon="notifications">notifications</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border-2 border-surface-container-high">
+<img alt="Admin Avatar" class="w-full h-full object-cover" data-alt="professional headshot of a smiling business administrator with clean minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCavOnKDhHHMrOUJ7kFY2zxcGp0Ugo9H0PUmZNFpsPjpp2ATQChQ3OgVaPwrI6nUiXMdnTzUOBoBWuGYej33zHkHxB326L8oLdVXnM78k_wXUulUT3vDsVeXaMFIc9v9O-aLD_xEziQ0iZRx264HVFXtsRFxQcVUdhL_JoHHt6LB7xuhCTkk93zDbMiX34hrBT_ea79k_yNh8OHElqs5r2LCVvIjMkkmO_Jxl3ikAiLbLwLjEzTIaFMZyNw1L6MHqpFbUiA8cyXKw"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Customer Dashboard Content -->
+<div class="flex-1 flex overflow-hidden p-6 gap-6">
+<!-- Left Side: Directory (Bento Grid Style) -->
+<div class="w-full lg:w-2/3 flex flex-col gap-6 overflow-y-auto no-scrollbar">
+<!-- Registration Header -->
+<div class="bg-surface-container-low p-6 rounded-xl flex items-center justify-between">
+<div>
+<h3 class="text-2xl font-extrabold text-on-surface font-headline leading-tight">Customer Network</h3>
+<p class="text-sm text-secondary font-medium mt-1">1,284 Active Members tracked this month</p>
+</div>
+<button class="bg-primary text-on-primary px-5 py-3 rounded-lg font-bold flex items-center gap-2 hover:shadow-xl transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
+                        Register New
+                    </button>
+</div>
+<!-- Customer Directory Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Customer Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-lg shadow-sm border border-transparent hover:border-primary/20 transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-4 items-center">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary-container">EH</div>
+<div>
+<h4 class="font-bold text-on-surface group-hover:text-primary transition-colors">Elena Hudson</h4>
+<p class="text-xs text-secondary font-medium tracking-tight">ID: #CST-99210</p>
+</div>
+</div>
+<div class="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-full text-[10px] font-black uppercase">Gold Member</div>
+</div>
+<div class="space-y-2 mb-4">
+<div class="flex items-center gap-2 text-sm text-secondary">
+<span class="material-symbols-outlined text-xs" data-icon="smartphone">smartphone</span>
+                                +1 (555) 012-9934
+                            </div>
+<div class="flex items-center gap-2 text-sm text-secondary">
+<span class="material-symbols-outlined text-xs" data-icon="mail">mail</span>
+                                elena.h@example.com
+                            </div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-surface-container">
+<div class="flex flex-col">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">Loyalty Points</span>
+<span class="text-lg font-black text-on-surface font-headline">2,450 pts</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary translate-x-0 group-hover:translate-x-1 transition-all" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<!-- Customer Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-lg shadow-sm border border-transparent hover:border-primary/20 transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-4 items-center">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary-container">MW</div>
+<div>
+<h4 class="font-bold text-on-surface group-hover:text-primary transition-colors">Marcus Wright</h4>
+<p class="text-xs text-secondary font-medium tracking-tight">ID: #CST-99185</p>
+</div>
+</div>
+<div class="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-black uppercase">Silver Member</div>
+</div>
+<div class="space-y-2 mb-4">
+<div class="flex items-center gap-2 text-sm text-secondary">
+<span class="material-symbols-outlined text-xs" data-icon="smartphone">smartphone</span>
+                                +1 (555) 982-1102
+                            </div>
+<div class="flex items-center gap-2 text-sm text-secondary">
+<span class="material-symbols-outlined text-xs" data-icon="mail">mail</span>
+                                m.wright@tech-corp.net
+                            </div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-surface-container">
+<div class="flex flex-col">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">Loyalty Points</span>
+<span class="text-lg font-black text-on-surface font-headline">820 pts</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary translate-x-0 group-hover:translate-x-1 transition-all" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<!-- Customer Card 3 -->
+<div class="bg-surface-container-lowest p-5 rounded-lg shadow-sm border border-transparent hover:border-primary/20 transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-4 items-center">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary-container">SC</div>
+<div>
+<h4 class="font-bold text-on-surface group-hover:text-primary transition-colors">Sarah Chen</h4>
+<p class="text-xs text-secondary font-medium tracking-tight">ID: #CST-88712</p>
+</div>
+</div>
+<div class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-[10px] font-black uppercase">Platinum Member</div>
+</div>
+<div class="space-y-2 mb-4">
+<div class="flex items-center gap-2 text-sm text-secondary">
+<span class="material-symbols-outlined text-xs" data-icon="smartphone">smartphone</span>
+                                +1 (555) 441-0021
+                            </div>
+<div class="flex items-center gap-2 text-sm text-secondary">
+<span class="material-symbols-outlined text-xs" data-icon="mail">mail</span>
+                                chen.s@creative.studio
+                            </div>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-surface-container">
+<div class="flex flex-col">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">Loyalty Points</span>
+<span class="text-lg font-black text-on-surface font-headline">12,140 pts</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary translate-x-0 group-hover:translate-x-1 transition-all" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<!-- Add More Card -->
+<div class="border-2 border-dashed border-outline-variant rounded-lg p-5 flex flex-col items-center justify-center gap-2 hover:bg-surface-container-low transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-outline group-hover:text-primary text-3xl" data-icon="add_circle">add_circle</span>
+<span class="text-sm font-bold text-secondary">Add New Member Record</span>
+</div>
+</div>
+</div>
+<!-- Right Side: Details Pane (Asymmetric Layout) -->
+<div class="hidden lg:flex w-1/3 flex-col gap-6 overflow-y-auto no-scrollbar bg-surface-container-low rounded-2xl p-6">
+<!-- Detail Header -->
+<div class="flex flex-col items-center text-center">
+<div class="relative w-24 h-24 mb-4">
+<img alt="Customer Profile" class="w-full h-full object-cover rounded-full shadow-xl" data-alt="vibrant portrait of a stylish woman with a warm expression against a soft studio backdrop" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATnMYJN232_ivKhwWw_YFpFHqch6bvefbxPFSl9U1mKkqAyB3qEHvBcMWRaoXRymhaxhm3S9nlfbWfcDxNVoR5hEi4-Tl_xqiTStrISA2OVs_0GRF2ya19LCbv9XQz9rFPQriTDr6RJyGMK3eIzU_QUcTOw5_nrUPPF2cg9FwH_-Mt4Lz48_uNLvVg4cX4eCBKtvPAsBnBNDZergsDqJoAfApHwa0HZYthtZh9lc73eHFIenIpGUt-c5aicTFWPFLsNYjrQPVedw"/>
+<div class="absolute -bottom-1 -right-1 bg-primary p-1.5 rounded-full text-on-primary border-4 border-surface-container-low">
+<span class="material-symbols-outlined text-sm" data-icon="verified" data-weight="fill">verified</span>
+</div>
+</div>
+<h3 class="text-xl font-black text-on-surface font-headline">Elena Hudson</h3>
+<p class="text-sm text-secondary mb-4">Customer since Oct 2022</p>
+<div class="flex gap-2 mb-6">
+<button class="p-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-primary hover:text-on-primary transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-primary hover:text-on-primary transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="share">share</span>
+</button>
+<button class="p-2 rounded-full bg-surface-container-highest text-on-surface hover:bg-error hover:text-on-error transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="block">block</span>
+</button>
+</div>
+</div>
+<!-- Loyalty Visualization -->
+<div class="bg-primary rounded-xl p-6 text-on-primary shadow-lg overflow-hidden relative">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-on-primary/10 rounded-full blur-2xl"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] uppercase font-black tracking-widest opacity-80">Reward Balance</span>
+<span class="material-symbols-outlined opacity-80" data-icon="star">star</span>
+</div>
+<div class="text-3xl font-black font-headline mb-4">2,450 <span class="text-sm font-medium opacity-70">pts</span></div>
+<div class="w-full bg-on-primary/20 h-1.5 rounded-full overflow-hidden mb-2">
+<div class="bg-on-primary h-full w-3/4 rounded-full"></div>
+</div>
+<div class="text-[10px] font-bold">550 pts until <span class="underline underline-offset-2">Diamond Tier</span></div>
+</div>
+</div>
+<!-- Detailed Fields -->
+<div class="space-y-4">
+<div class="bg-surface-container-lowest p-4 rounded-xl">
+<span class="text-[10px] text-outline uppercase font-black block mb-2 tracking-widest">Contact Information</span>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs text-secondary font-medium">Email</span>
+<span class="text-sm font-semibold text-on-surface">elena.h@example.com</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs text-secondary font-medium">Phone</span>
+<span class="text-sm font-semibold text-on-surface">+1 (555) 012-9934</span>
+</div>
+<div class="flex items-start justify-between">
+<span class="text-xs text-secondary font-medium">Address</span>
+<span class="text-sm font-semibold text-on-surface text-right w-40 leading-tight">422 West 12th St,<br/>San Francisco, CA 94110</span>
+</div>
+</div>
+</div>
+<!-- Past Transactions -->
+<div class="bg-surface-container-lowest p-4 rounded-xl">
+<div class="flex justify-between items-center mb-4">
+<span class="text-[10px] text-outline uppercase font-black tracking-widest">Recent Transactions</span>
+<button class="text-[10px] font-bold text-primary hover:underline">View All</button>
+</div>
+<div class="space-y-4">
+<!-- Transaction 1 -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="shopping_basket">shopping_basket</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold truncate">Premium Espresso Kit</p>
+<p class="text-[10px] text-secondary font-medium">12 Oct 2023 • ID #3310</p>
+</div>
+<div class="text-sm font-black text-on-surface">$184.50</div>
+</div>
+<!-- Transaction 2 -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="local_cafe">local_cafe</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold truncate">Artisan Roast Coffee x3</p>
+<p class="text-[10px] text-secondary font-medium">04 Oct 2023 • ID #3102</p>
+</div>
+<div class="text-sm font-black text-on-surface">$42.00</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Action -->
+<button class="w-full bg-surface-container-highest text-on-surface-variant py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-outline-variant/30 transition-all">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+                    Audit Loyalty History
+                </button>
+</div>
+</div>
+</main>
+<!-- Mobile Navigation Shell (Suppressed based on JSON logic but kept for responsive pivot) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white flex items-center justify-around border-t border-slate-100 z-50">
+<a class="flex flex-col items-center text-slate-500" href="#">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+<span class="text-[10px] font-bold">Terminal</span>
+</a>
+<a class="flex flex-col items-center text-blue-600" href="#">
+<span class="material-symbols-outlined" data-icon="group" data-weight="fill">group</span>
+<span class="text-[10px] font-bold">Customers</span>
+</a>
+<a class="flex flex-col items-center text-slate-500" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-[10px] font-bold">Stock</span>
+</a>
+<a class="flex flex-col items-center text-slate-500" href="#">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="text-[10px] font-bold">Menu</span>
+</a>
+</nav>
+</body></html>

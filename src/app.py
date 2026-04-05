@@ -44,11 +44,13 @@ def create_app(config=None) -> Flask:
     from src.routes.users import users_bp
     from src.routes.products import products_bp
     from src.routes.sales import sales_bp
+    from src.routes.categories import categories_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(products_bp)
     app.register_blueprint(sales_bp)
+    app.register_blueprint(categories_bp)
 
     # Global error handlers
     @app.errorhandler(404)

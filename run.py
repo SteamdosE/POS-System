@@ -3,11 +3,6 @@
 POS System - Desktop GUI Entry Point
 """
 import sys
-import os
-from pathlib import Path
-
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 try:
     import tkinter as tk
@@ -21,7 +16,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from gui.main import POSApplication
+    from src.gui.main import POSApplication
 except ImportError as e:
     print(f"Error: Missing required dependency - {e}")
     print("Please install dependencies: pip install -r requirements_gui.txt")

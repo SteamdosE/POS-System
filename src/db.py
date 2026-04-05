@@ -31,5 +31,5 @@ def init_db(app) -> None:
 
     with app.app_context():
         # Import models so SQLAlchemy registers them before creating tables
-        from src.models import User, Product, Sale, SaleItem  # noqa: F401
+        from src.models import User, Product, Sale, SaleItem, Category  # noqa: F401
         db.create_all()
