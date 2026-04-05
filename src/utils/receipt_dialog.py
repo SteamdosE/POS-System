@@ -3,7 +3,7 @@ Receipt Display Dialog
 """
 import tkinter as tk
 from tkinter import ttk
-from ..config import *
+from ..gui.config import *
 
 class ReceiptDialog(tk.Toplevel):
     """Display and manage receipt dialog"""

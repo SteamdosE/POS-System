@@ -9,11 +9,14 @@ from sqlalchemy import func
 from src.db import db
 from src.models.product import Product
 from src.models.sale import Sale, SaleItem
+from src.models.customer import Customer, SaleCustomer
+from src.models.payment import Payment
 from src.utils.auth import any_authenticated, manager_or_admin_required
 from src.utils.helpers import success_response, error_response, paginate_query
 from flask_jwt_extended import get_jwt_identity
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
+DEFAULT_TAX_RATE = Decimal("0.10")
 
 
 @sales_bp.route("", methods=["POST"])
@@ -24,7 +27,15 @@ def create_sale():
     Request JSON body::
 
         {
-            "payment_method": "cash|card|mobile",
+            "payment_method": "cash|card|mobile|split",
+            "customer_id": int,                    (optional)
+            "discount": float,                     (optional)
+            "tax_rate": float,                     (optional, default 0.10)
+            "amount_tendered": float,              (optional, cash only)
+            "payments": [                          (required for split)
+                {"method": "cash|card|mobile", "amount": float, "reference": "string"},
+                ...
+            ],
             "items": [
                 {"product_id": int, "quantity": int},
                 ...
@@ -44,10 +55,20 @@ def create_sale():
     if not items_data or not isinstance(items_data, list):
         return error_response("'items' must be a non-empty list", 400)
 
-    allowed_methods = {"cash", "card", "mobile"}
+    allowed_methods = {"cash", "card", "mobile", "split"}
     payment_method = data.get("payment_method", "cash")
     if payment_method not in allowed_methods:
         return error_response(f"payment_method must be one of: {', '.join(allowed_methods)}", 400)
+
+    customer = None
+    customer_id = data.get("customer_id")
+    if customer_id is not None:
+        try:
+            customer = Customer.query.get(int(customer_id))
+        except (TypeError, ValueError):
+            return error_response("customer_id must be an integer", 400)
+        if not customer or not customer.is_active:
+            return error_response("Customer not found", 404)
 
     total_amount = Decimal("0")
     sale_items = []
@@ -80,29 +101,157 @@ def create_sale():
         total_amount += subtotal
         sale_items.append((product, quantity, unit_price, subtotal))
 
-    user_id = get_jwt_identity()
-    sale = Sale(
-        user_id=user_id,
-        total_amount=total_amount,
-        items_count=len(sale_items),
-        payment_method=payment_method,
-    )
-    db.session.add(sale)
-    db.session.flush()  # populate sale.id before inserting items
+    try:
+        discount = Decimal(str(data.get("discount", 0) or 0))
+    except Exception:
+        return error_response("discount must be numeric", 400)
+    if discount < 0:
+        return error_response("discount cannot be negative", 400)
+    if discount > total_amount:
+        discount = total_amount
 
-    for product, quantity, unit_price, subtotal in sale_items:
-        item = SaleItem(
-            sale_id=sale.id,
-            product_id=product.id,
-            quantity=quantity,
-            unit_price=unit_price,
-            subtotal=subtotal,
+    try:
+        tax_rate = Decimal(str(data.get("tax_rate", DEFAULT_TAX_RATE)))
+    except Exception:
+        return error_response("tax_rate must be numeric", 400)
+    if tax_rate < 0:
+        return error_response("tax_rate cannot be negative", 400)
+
+    taxable_amount = total_amount - discount
+    tax_amount = taxable_amount * tax_rate
+    grand_total = taxable_amount + tax_amount
+
+    try:
+        user_id = int(get_jwt_identity())
+        sale_payment_method = payment_method if payment_method != "split" else "cash"
+        sale = Sale(
+            user_id=user_id,
+            total_amount=grand_total,
+            items_count=len(sale_items),
+            payment_method=sale_payment_method,
         )
-        db.session.add(item)
-        product.quantity_in_stock -= quantity
+        db.session.add(sale)
+        db.session.flush()  # populate sale.id before inserting items
 
-    db.session.commit()
-    return success_response(sale.to_dict(include_items=True), "Sale created", 201)
+        for product, quantity, unit_price, subtotal in sale_items:
+            item = SaleItem(
+                sale_id=sale.id,
+                product_id=product.id,
+                quantity=quantity,
+                unit_price=unit_price,
+                subtotal=subtotal,
+            )
+            db.session.add(item)
+            product.quantity_in_stock -= quantity
+
+        total_change = Decimal("0")
+        payment_records = []
+        if payment_method == "split":
+            split_payments = data.get("payments")
+            if not isinstance(split_payments, list) or not split_payments:
+                db.session.rollback()
+                return error_response("payments must be a non-empty list for split payment", 400)
+
+            split_total = Decimal("0")
+            cash_payment_idx = None
+            for idx, p in enumerate(split_payments):
+                method = p.get("method")
+                if method not in {"cash", "card", "mobile"}:
+                    db.session.rollback()
+                    return error_response("Each split payment method must be cash, card, or mobile", 400)
+                try:
+                    amount = Decimal(str(p.get("amount", 0)))
+                except Exception:
+                    db.session.rollback()
+                    return error_response("Each split payment amount must be numeric", 400)
+                if amount <= 0:
+                    db.session.rollback()
+                    return error_response("Each split payment amount must be greater than 0", 400)
+                split_total += amount
+                if method == "cash" and cash_payment_idx is None:
+                    cash_payment_idx = idx
+                payment_records.append(
+                    {
+                        "method": method,
+                        "amount": amount,
+                        "reference": p.get("reference"),
+                        "tendered_amount": p.get("tendered_amount"),
+                        "change_amount": Decimal("0"),
+                    }
+                )
+
+            if split_total < grand_total:
+                db.session.rollback()
+                return error_response("Split payment amount is less than total due", 400)
+            over_paid = split_total - grand_total
+            if over_paid > 0:
+                if cash_payment_idx is None:
+                    db.session.rollback()
+                    return error_response("Overpayment in split mode requires a cash component for change", 400)
+                payment_records[cash_payment_idx]["change_amount"] = over_paid
+                total_change = over_paid
+        else:
+            paid_amount = grand_total
+            tendered_amount = None
+            if payment_method == "cash":
+                raw_tendered = data.get("amount_tendered")
+                if raw_tendered is not None:
+                    try:
+                        tendered_amount = Decimal(str(raw_tendered))
+                    except Exception:
+                        db.session.rollback()
+                        return error_response("amount_tendered must be numeric", 400)
+                    if tendered_amount < grand_total:
+                        db.session.rollback()
+                        return error_response("amount_tendered is less than total due", 400)
+                    paid_amount = tendered_amount
+                    total_change = tendered_amount - grand_total
+
+            payment_records.append(
+                {
+                    "method": payment_method,
+                    "amount": paid_amount,
+                    "reference": data.get("payment_reference"),
+                    "tendered_amount": tendered_amount,
+                    "change_amount": total_change,
+                }
+            )
+
+        for p in payment_records:
+            db.session.add(
+                Payment(
+                    sale_id=sale.id,
+                    amount=p["amount"],
+                    payment_method=p["method"],
+                    reference=p.get("reference"),
+                    tendered_amount=p.get("tendered_amount"),
+                    change_amount=p.get("change_amount") or Decimal("0"),
+                    status="confirmed",
+                )
+            )
+
+        if customer:
+            db.session.add(SaleCustomer(sale_id=sale.id, customer_id=customer.id))
+            points_earned = int(grand_total // Decimal("100"))
+            customer.loyalty_points += points_earned
+
+        db.session.commit()
+        payload = sale.to_dict(include_items=True)
+        payload["payment_method"] = payment_method
+        payload["financials"] = {
+            "subtotal": float(total_amount),
+            "discount": float(discount),
+            "tax_rate": float(tax_rate),
+            "tax_amount": float(tax_amount),
+            "grand_total": float(grand_total),
+            "change_amount": float(total_change),
+        }
+        if customer:
+            payload["customer"] = customer.to_dict()
+        return success_response(payload, "Sale created", 201)
+    except Exception:
+        db.session.rollback()
+        raise
 
 
 @sales_bp.route("", methods=["GET"])

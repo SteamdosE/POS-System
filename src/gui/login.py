@@ -260,6 +260,8 @@ class LoginScreen(tk.Frame):
 
     def _hide_loading_indicator(self):
         """Reset loading state if staying on login screen."""
+        if not self.winfo_exists():
+            return
         self.is_loading_transition = False
         self.loading_bar.stop()
         self.loading_frame.grid_forget()
@@ -364,6 +366,8 @@ class LoginScreen(tk.Frame):
 
     def show_login_page(self):
         """Navigate back to login page from forgot-password page."""
+        if not self.winfo_exists():
+            return
         self.forgot_password_visible = False
         self.forgot_feedback_label.config(text="", fg=COLOR_DANGER)
         self.login_page.tkraise()
@@ -404,7 +408,7 @@ class LoginScreen(tk.Frame):
             self.username_entry.delete(0, tk.END)
             self.username_entry.insert(0, username)
 
-            self.after(1200, self.show_login_page)
+            self.parent.after(1200, self.show_login_page)
         except APIError as error:
             self.forgot_feedback_label.config(text=str(error), fg=COLOR_DANGER)
         except Exception as error:
@@ -437,9 +441,9 @@ class LoginScreen(tk.Frame):
             self._show_loading_indicator()
             
             if self.on_login_success:
-                self.after(600, lambda: self.on_login_success(self.api_client))
+                self.parent.after(600, lambda: self.on_login_success(self.api_client))
             else:
-                self.after(1500, self._hide_loading_indicator)
+                self.parent.after(1500, self._hide_loading_indicator)
         
         except APIError as e:
             self.error_label.config(text=str(e))

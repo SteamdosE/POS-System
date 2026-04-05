@@ -7,7 +7,7 @@ from ..config import *
 class Receipt:
     """Generate professional POS receipts"""
     
-    def __init__(self, sale_id, items, subtotal, tax, total, discount=0, payment_method="cash"):
+    def __init__(self, sale_id, items, subtotal, tax, total, discount=0, payment_method="cash", tax_rate=0.0):
         self.sale_id = sale_id
         self.items = items
         self.subtotal = subtotal
@@ -15,6 +15,7 @@ class Receipt:
         self.total = total
         self.discount = discount
         self.payment_method = payment_method
+        self.tax_rate = tax_rate
         self.timestamp = datetime.now()
     
     def generate_text_receipt(self):
@@ -49,7 +50,7 @@ class Receipt:
         if self.discount > 0:
             lines.append(f"{'Discount':<34} {self.discount:>15.2f}")
         
-        tax_label = f"Tax ({TAX_RATE*100:.0f}%)"
+        tax_label = f"Tax ({self.tax_rate*100:.0f}%)"
         lines.append(f"{tax_label:<34} {self.tax:>15.2f}")
         
         lines.append("=" * 50)
@@ -129,7 +130,7 @@ class Receipt:
         
         html += f"""
                     <tr>
-                        <td>Tax ({TAX_RATE*100:.0f}%)</td>
+                        <td>Tax ({self.tax_rate*100:.0f}%)</td>
                         <td>{self.tax:.2f}</td>
                     </tr>
                     <tr class="total">

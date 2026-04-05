@@ -153,17 +153,22 @@ class APIClient:
     def create_sale(self, items: List[Dict], discount: float = 0, 
                    payment_method: str = "cash", customer_id: Optional[int] = None) -> Dict[str, Any]:
         """Create new sale"""
-        data = {
-            "items": items,
-            "discount": discount,
-            "payment_method": payment_method,
-            "customer_id": customer_id
-        }
+        if isinstance(items, dict):
+            data = items
+        else:
+            data = {
+                "items": items,
+                "discount": discount,
+                "payment_method": payment_method,
+                "customer_id": customer_id,
+            }
         return self._request("POST", "/sales", data)
     
     def get_sales(self, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
         """Get paginated list of sales."""
-        return self._request("GET", f"/sales?page={page}&per_page={per_page}")
+        response = self._request("GET", f"/sales?page={page}&per_page={per_page}")
+        response["sales"] = self._extract_items(response, "sales")
+        return response
     
     def get_sale(self, sale_id: int) -> Dict[str, Any]:
         """Get single sale by ID"""
@@ -176,6 +181,51 @@ class APIClient:
     def get_monthly_report(self) -> Dict[str, Any]:
         """Get monthly sales report"""
         return self._request("GET", "/sales/report/monthly")
+
+    # Customer Methods
+    def get_customers(self, page: int = 1, per_page: int = 100, search: str = "") -> Dict[str, Any]:
+        """Get paginated list of customers."""
+        endpoint = f"/customers?page={page}&per_page={per_page}"
+        if search:
+            endpoint += f"&search={search}"
+        response = self._request("GET", endpoint)
+        response["customers"] = self._extract_items(response, "customers")
+        return response
+
+    def create_customer(self, name: str, phone_number: str = "", email: str = "", address: str = "") -> Dict[str, Any]:
+        """Create new customer profile."""
+        data = {
+            "name": name,
+            "phone_number": phone_number,
+            "email": email,
+            "address": address,
+        }
+        return self._request("POST", "/customers", data)
+
+    def update_customer(self, customer_id: int, **kwargs) -> Dict[str, Any]:
+        """Update customer profile."""
+        return self._request("PUT", f"/customers/{customer_id}", kwargs)
+
+    def delete_customer(self, customer_id: int) -> Dict[str, Any]:
+        """Soft-delete customer profile."""
+        return self._request("DELETE", f"/customers/{customer_id}")
+
+    def get_customer_history(self, customer_id: int) -> Dict[str, Any]:
+        """Get purchase history for customer."""
+        return self._request("GET", f"/customers/{customer_id}/history")
+
+    # Payment Methods
+    def get_payments(self, page: int = 1, per_page: int = 50) -> Dict[str, Any]:
+        """Get paginated payment records."""
+        response = self._request("GET", f"/payments?page={page}&per_page={per_page}")
+        response["payments"] = self._extract_items(response, "payments")
+        return response
+
+    def get_sale_payments(self, sale_id: int) -> Dict[str, Any]:
+        """Get payments for a sale."""
+        response = self._request("GET", f"/payments/sale/{sale_id}")
+        response["payments"] = self._extract_items(response, "payments")
+        return response
     
     # User Methods
     def get_users(self) -> Dict[str, Any]:

@@ -28,6 +28,7 @@ class Sale(db.Model):
     # Relationships
     cashier = db.relationship("User", back_populates="sales")
     items = db.relationship("SaleItem", back_populates="sale", cascade="all, delete-orphan")
+    payments = db.relationship("Payment", back_populates="sale", cascade="all, delete-orphan")
 
     def to_dict(self, include_items: bool = False) -> dict:
         """Serialize the sale to a dictionary.
@@ -48,6 +49,7 @@ class Sale(db.Model):
         }
         if include_items:
             data["items"] = [item.to_dict() for item in self.items]
+            data["payments"] = [payment.to_dict() for payment in self.payments]
         return data
 
     def __repr__(self) -> str:

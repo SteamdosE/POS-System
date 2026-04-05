@@ -3,8 +3,9 @@ Manager Dashboard Screen
 """
 import tkinter as tk
 from tkinter import ttk
+from datetime import datetime
 from .config import *
-from .utils.formatters import format_currency, format_datetime
+from .utils.formatters import format_currency, format_datetime, parse_currency
 from .utils.dialogs import show_error, show_success, show_confirmation, show_input_dialog
 from .utils.api_client import APIError
 
@@ -57,6 +58,10 @@ class ManagerDashboard(tk.Frame):
         notebook.add(products_frame, text="Products")
         self.setup_products_tab(products_frame)
 
+        analytics_frame = tk.Frame(notebook, bg=COLOR_LIGHT)
+        notebook.add(analytics_frame, text="Analytics")
+        self.setup_analytics_tab(analytics_frame)
+
     def setup_sales_tab(self, content):
         """Setup sales tab UI."""
         stats_frame = tk.Frame(content, bg=COLOR_LIGHT)
@@ -74,11 +79,16 @@ class ManagerDashboard(tk.Frame):
         sales_label_frame.pack(fill=tk.BOTH, expand=True, pady=PADDING_MEDIUM)
 
         self.sales_tree = ttk.Treeview(sales_label_frame, columns=("Date", "Amount", "Items", "Payment"), height=TABLE_HEIGHT)
-        self.sales_tree.heading("#0", text="ID")
-        self.sales_tree.heading("Date", text="Date")
-        self.sales_tree.heading("Amount", text="Amount")
-        self.sales_tree.heading("Items", text="Items")
-        self.sales_tree.heading("Payment", text="Payment")
+        self.sales_tree.heading("#0", text="ID", anchor=tk.W)
+        self.sales_tree.heading("Date", text="Date", anchor=tk.W)
+        self.sales_tree.heading("Amount", text="Amount", anchor=tk.W)
+        self.sales_tree.heading("Items", text="Items", anchor=tk.W)
+        self.sales_tree.heading("Payment", text="Payment", anchor=tk.W)
+        self.sales_tree.column("#0", anchor=tk.W)
+        self.sales_tree.column("Date", anchor=tk.W)
+        self.sales_tree.column("Amount", anchor=tk.W)
+        self.sales_tree.column("Items", anchor=tk.W)
+        self.sales_tree.column("Payment", anchor=tk.W)
         self.sales_tree.pack(fill=tk.BOTH, expand=True, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
 
         controls = tk.Frame(content, bg=COLOR_LIGHT)
@@ -106,19 +116,59 @@ class ManagerDashboard(tk.Frame):
         tk.Button(controls, text="Categories", bg=COLOR_SECONDARY, fg=COLOR_WHITE, command=self.manage_categories, cursor="hand2").pack(side=tk.LEFT, padx=PADDING_SMALL)
 
         self.products_tree = ttk.Treeview(parent, columns=("Name", "Price", "Stock", "Category"), height=TABLE_HEIGHT)
-        self.products_tree.heading("#0", text="ID")
-        self.products_tree.heading("Name", text="Name")
-        self.products_tree.heading("Price", text="Price")
-        self.products_tree.heading("Stock", text="Stock")
-        self.products_tree.heading("Category", text="Category")
-        self.products_tree.column("#0", width=40)
-        self.products_tree.column("Name", width=150)
-        self.products_tree.column("Price", width=80)
-        self.products_tree.column("Stock", width=80)
-        self.products_tree.column("Category", width=100)
+        self.products_tree.heading("#0", text="ID", anchor=tk.W)
+        self.products_tree.heading("Name", text="Name", anchor=tk.W)
+        self.products_tree.heading("Price", text="Price", anchor=tk.W)
+        self.products_tree.heading("Stock", text="Stock", anchor=tk.W)
+        self.products_tree.heading("Category", text="Category", anchor=tk.W)
+        self.products_tree.column("#0", width=40, anchor=tk.W)
+        self.products_tree.column("Name", width=150, anchor=tk.W)
+        self.products_tree.column("Price", width=80, anchor=tk.W)
+        self.products_tree.column("Stock", width=80, anchor=tk.W)
+        self.products_tree.column("Category", width=100, anchor=tk.W)
         self.products_tree.pack(fill=tk.BOTH, expand=True, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
 
         self.load_products()
+
+    def setup_analytics_tab(self, parent):
+        """Setup analytics/reporting tab for managers."""
+        controls = tk.Frame(parent, bg=COLOR_LIGHT)
+        controls.pack(fill=tk.X, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
+
+        tk.Button(
+            controls,
+            text="Daily Report",
+            bg=COLOR_PRIMARY,
+            fg=COLOR_WHITE,
+            command=self.show_daily_report,
+            cursor="hand2",
+        ).pack(side=tk.LEFT, padx=PADDING_SMALL)
+
+        tk.Button(
+            controls,
+            text="Monthly Report",
+            bg=COLOR_PRIMARY,
+            fg=COLOR_WHITE,
+            command=self.show_monthly_report,
+            cursor="hand2",
+        ).pack(side=tk.LEFT, padx=PADDING_SMALL)
+
+        tk.Button(
+            controls,
+            text="Export",
+            bg=COLOR_SUCCESS,
+            fg=COLOR_WHITE,
+            command=self.export_analytics_report,
+            cursor="hand2",
+        ).pack(side=tk.LEFT, padx=PADDING_SMALL)
+
+        self.analytics_text = tk.Text(parent, height=22, width=100, font=FONT_MONO)
+        self.analytics_text.pack(fill=tk.BOTH, expand=True, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
+        self.analytics_text.insert(
+            tk.END,
+            "Select 'Daily Report' or 'Monthly Report' to generate analytics.\n",
+        )
+        self.analytics_text.config(state=tk.DISABLED)
 
     def load_products(self):
         """Load and display products."""
@@ -328,7 +378,7 @@ class ManagerDashboard(tk.Frame):
         item = self.products_tree.item(selection[0])
         product_id = item["text"]
         product_name = item["values"][0]
-        product_price = item["values"][1].replace("Ksh ", "").replace(",", "").strip()
+        product_price = parse_currency(item["values"][1])
         product_stock = item["values"][2]
         product_category = item["values"][3]
 
@@ -413,11 +463,14 @@ class ManagerDashboard(tk.Frame):
             
             total_sales = 0
             for sale in response.get("sales", []):
-                total_sales += sale.get("total", 0)
+                sale_total = sale.get("total_amount", sale.get("total", 0))
+                sale_date = sale.get("created_at", sale.get("date", ""))
+                sale_items = sale.get("items_count", len(sale.get("items", [])))
+                total_sales += sale_total
                 self.sales_tree.insert("", tk.END, text=sale.get("id", ""), values=(
-                    format_datetime(sale.get("date", "")),
-                    format_currency(sale.get("total", 0)),
-                    len(sale.get("items", [])),
+                    format_datetime(sale_date),
+                    format_currency(sale_total),
+                    sale_items,
                     sale.get("payment_method", "")
                 ))
             
@@ -425,3 +478,111 @@ class ManagerDashboard(tk.Frame):
             self.transaction_label.config(text=str(len(response.get("sales", []))))
         except APIError as e:
             show_error("Error", f"Failed to load sales: {str(e)}")
+
+    def show_daily_report(self):
+        """Generate and display manager daily report."""
+        try:
+            response = self.api_client.get_daily_report()
+            rows = response.get("data") or []
+            if not isinstance(rows, list):
+                rows = []
+
+            self.analytics_text.config(state=tk.NORMAL)
+            self.analytics_text.delete(1.0, tk.END)
+
+            report_lines = [
+                "DAILY SALES REPORT",
+                "=" * 72,
+                f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                "",
+                f"{'Date':<14}{'Transactions':<16}{'Items':<12}{'Revenue':>16}",
+                "-" * 72,
+            ]
+
+            total_revenue = 0.0
+            total_transactions = 0
+            total_items = 0
+            for row in rows:
+                date_str = str(row.get("date", ""))
+                tx = int(row.get("total_transactions", 0) or 0)
+                items = int(row.get("total_items", 0) or 0)
+                revenue = float(row.get("total_revenue", 0) or 0)
+                total_revenue += revenue
+                total_transactions += tx
+                total_items += items
+                report_lines.append(f"{date_str:<14}{tx:<16}{items:<12}{format_currency(revenue):>16}")
+
+            report_lines.extend(
+                [
+                    "-" * 72,
+                    f"{'TOTAL':<14}{total_transactions:<16}{total_items:<12}{format_currency(total_revenue):>16}",
+                    "=" * 72,
+                ]
+            )
+
+            self.analytics_text.insert(tk.END, "\n".join(report_lines))
+            self.analytics_text.config(state=tk.DISABLED)
+        except APIError as e:
+            show_error("Error", f"Failed to generate daily report: {str(e)}")
+
+    def show_monthly_report(self):
+        """Generate and display manager monthly report."""
+        try:
+            response = self.api_client.get_monthly_report()
+            rows = response.get("data") or []
+            if not isinstance(rows, list):
+                rows = []
+
+            self.analytics_text.config(state=tk.NORMAL)
+            self.analytics_text.delete(1.0, tk.END)
+
+            report_lines = [
+                "MONTHLY SALES REPORT",
+                "=" * 72,
+                f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                "",
+                f"{'Month':<14}{'Transactions':<16}{'Items':<12}{'Revenue':>16}",
+                "-" * 72,
+            ]
+
+            total_revenue = 0.0
+            total_transactions = 0
+            total_items = 0
+            for row in rows:
+                month_str = str(row.get("month", ""))
+                tx = int(row.get("total_transactions", 0) or 0)
+                items = int(row.get("total_items", 0) or 0)
+                revenue = float(row.get("total_revenue", 0) or 0)
+                total_revenue += revenue
+                total_transactions += tx
+                total_items += items
+                report_lines.append(f"{month_str:<14}{tx:<16}{items:<12}{format_currency(revenue):>16}")
+
+            report_lines.extend(
+                [
+                    "-" * 72,
+                    f"{'TOTAL':<14}{total_transactions:<16}{total_items:<12}{format_currency(total_revenue):>16}",
+                    "=" * 72,
+                ]
+            )
+
+            self.analytics_text.insert(tk.END, "\n".join(report_lines))
+            self.analytics_text.config(state=tk.DISABLED)
+        except APIError as e:
+            show_error("Error", f"Failed to generate monthly report: {str(e)}")
+
+    def export_analytics_report(self):
+        """Export analytics report to a timestamped text file."""
+        try:
+            content = self.analytics_text.get(1.0, tk.END).strip()
+            if not content:
+                show_error("Error", "No analytics report to export")
+                return
+
+            filename = f"manager_analytics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(content + "\n")
+
+            show_success("Exported", f"Analytics report saved to {filename}")
+        except Exception as e:
+            show_error("Error", f"Failed to export analytics report: {str(e)}")

@@ -3,6 +3,9 @@ GUI Configuration for POS System
 Contains all settings, colors, fonts, and constants
 """
 
+import json
+import os
+
 # API Configuration
 API_BASE_URL = "http://localhost:5000/api"
 API_TIMEOUT = 10
@@ -55,5 +58,110 @@ TABLE_HEIGHT = 15
 TABLE_COLUMNS = 6
 
 # Currency
-CURRENCY_SYMBOL = "Ksh"
+CURRENCY_CODE = "GHS"
+CURRENCY_SYMBOL = "GH₵"
 DECIMAL_PLACES = 2
+
+SUPPORTED_CURRENCIES = {
+	"GHS": "GH₵",
+	"KES": "Ksh",
+	"USD": "$",
+	"EUR": "€",
+	"GBP": "£",
+}
+
+_SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "app_settings.json")
+
+
+def _load_app_settings() -> dict:
+	"""Load persisted GUI settings from disk."""
+	if not os.path.exists(_SETTINGS_FILE):
+		return {}
+	try:
+		with open(_SETTINGS_FILE, "r", encoding="utf-8") as f:
+			data = json.load(f)
+			if isinstance(data, dict):
+				return data
+	except (OSError, ValueError, TypeError):
+		pass
+	return {}
+
+
+def _save_app_settings(settings: dict) -> bool:
+	"""Persist GUI settings to disk."""
+	try:
+		with open(_SETTINGS_FILE, "w", encoding="utf-8") as f:
+			json.dump(settings, f, indent=2)
+		return True
+	except OSError:
+		return False
+
+
+def set_currency(currency_code: str) -> bool:
+	"""Set current app currency and persist it."""
+	global CURRENCY_CODE, CURRENCY_SYMBOL
+	code = (currency_code or "").strip().upper()
+	if code not in SUPPORTED_CURRENCIES:
+		return False
+
+	CURRENCY_CODE = code
+	CURRENCY_SYMBOL = SUPPORTED_CURRENCIES[code]
+
+	current = _load_app_settings()
+	current["currency_code"] = CURRENCY_CODE
+	return _save_app_settings(current)
+
+
+def set_tax_rate(tax_rate: float) -> bool:
+	"""Set current tax rate (e.g. 0.1 for 10%) and persist it."""
+	global TAX_RATE
+	try:
+		rate = float(tax_rate)
+	except (TypeError, ValueError):
+		return False
+
+	if rate < 0 or rate > 1:
+		return False
+
+	TAX_RATE = rate
+	current = _load_app_settings()
+	current["tax_rate"] = TAX_RATE
+	return _save_app_settings(current)
+
+
+def get_current_tax_rate() -> float:
+	"""Return current tax rate value as fraction."""
+	return TAX_RATE
+
+
+def get_currency_display_options() -> list:
+	"""Return currency options for dropdowns."""
+	return [f"{code} ({symbol})" for code, symbol in SUPPORTED_CURRENCIES.items()]
+
+
+def parse_currency_option(option: str) -> str:
+	"""Extract currency code from option label like 'GHS (GH₵)'."""
+	if not option:
+		return ""
+	return option.split(" ", 1)[0].strip().upper()
+
+
+def get_current_currency_option() -> str:
+	"""Return current currency as option label."""
+	symbol = SUPPORTED_CURRENCIES.get(CURRENCY_CODE, CURRENCY_SYMBOL)
+	return f"{CURRENCY_CODE} ({symbol})"
+
+
+_loaded_settings = _load_app_settings()
+_loaded_currency = str(_loaded_settings.get("currency_code", CURRENCY_CODE)).upper()
+if _loaded_currency in SUPPORTED_CURRENCIES:
+	CURRENCY_CODE = _loaded_currency
+	CURRENCY_SYMBOL = SUPPORTED_CURRENCIES[_loaded_currency]
+
+_loaded_tax = _loaded_settings.get("tax_rate", TAX_RATE)
+try:
+	_loaded_tax = float(_loaded_tax)
+	if 0 <= _loaded_tax <= 1:
+		TAX_RATE = _loaded_tax
+except (TypeError, ValueError):
+	pass

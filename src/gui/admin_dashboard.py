@@ -5,9 +5,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from datetime import datetime
 from .config import *
-from .utils.formatters import format_currency, format_date
+from .utils.formatters import format_currency, format_date, parse_currency
 from .utils.dialogs import show_error, show_success, show_confirmation, show_input_dialog
 from .utils.api_client import APIError
+from .customer_management import CustomerManagement
 
 class AdminDashboard(tk.Frame):
     """Admin dashboard with tabs for products, users, and reports"""
@@ -167,6 +168,76 @@ class AdminDashboard(tk.Frame):
         reports_frame = tk.Frame(notebook, bg=COLOR_LIGHT)
         notebook.add(reports_frame, text="Reports")
         self.setup_reports_tab(reports_frame)
+
+        # Tab 4: Customers
+        customers_frame = tk.Frame(notebook, bg=COLOR_LIGHT)
+        notebook.add(customers_frame, text="Customers")
+        customer_mgmt = CustomerManagement(customers_frame, self.api_client)
+        customer_mgmt.pack(fill=tk.BOTH, expand=True)
+
+        # Tab 5: Settings
+        settings_frame = tk.Frame(notebook, bg=COLOR_LIGHT)
+        notebook.add(settings_frame, text="Settings")
+        self.setup_settings_tab(settings_frame)
+
+    def setup_settings_tab(self, parent):
+        """Setup settings tab for app-level options like currency."""
+        container = tk.Frame(parent, bg=COLOR_LIGHT)
+        container.pack(fill=tk.BOTH, expand=True, padx=PADDING_LARGE, pady=PADDING_LARGE)
+
+        tk.Label(container, text="Application Settings", font=FONT_HEADING, bg=COLOR_LIGHT, fg=COLOR_DARK).pack(anchor="w", pady=(0, PADDING_MEDIUM))
+
+        currency_row = tk.Frame(container, bg=COLOR_LIGHT)
+        currency_row.pack(anchor="w", pady=PADDING_SMALL)
+
+        tk.Label(currency_row, text="Currency:", bg=COLOR_LIGHT, fg=COLOR_DARK).pack(side=tk.LEFT, padx=(0, PADDING_SMALL))
+        self.currency_var = tk.StringVar(value=get_current_currency_option())
+        self.currency_combo = ttk.Combobox(
+            currency_row,
+            textvariable=self.currency_var,
+            values=get_currency_display_options(),
+            state="readonly",
+            width=24,
+        )
+        self.currency_combo.pack(side=tk.LEFT)
+
+        tax_row = tk.Frame(container, bg=COLOR_LIGHT)
+        tax_row.pack(anchor="w", pady=PADDING_SMALL)
+        tk.Label(tax_row, text="Tax Rate (%):", bg=COLOR_LIGHT, fg=COLOR_DARK).pack(side=tk.LEFT, padx=(0, PADDING_SMALL))
+        self.tax_var = tk.StringVar(value=f"{get_current_tax_rate() * 100:.2f}")
+        self.tax_entry = tk.Entry(tax_row, textvariable=self.tax_var, width=10)
+        self.tax_entry.pack(side=tk.LEFT)
+
+        def save_settings():
+            selected_option = self.currency_var.get()
+            selected_code = parse_currency_option(selected_option)
+            try:
+                tax_rate_percent = float(self.tax_var.get().strip() or 0)
+            except ValueError:
+                show_error("Error", "Tax rate must be a number")
+                return
+            tax_rate = tax_rate_percent / 100.0
+            if selected_code not in SUPPORTED_CURRENCIES:
+                show_error("Error", "Invalid currency selection")
+                return
+
+            if not set_currency(selected_code):
+                show_error("Error", "Failed to save currency setting")
+                return
+
+            if not set_tax_rate(tax_rate):
+                show_error("Error", "Tax rate must be between 0 and 100")
+                return
+
+            # Refresh currently visible currency-formatted widgets.
+            self.load_products()
+            try:
+                self.load_sales()
+            except Exception:
+                pass
+            show_success("Settings Saved", "Settings Saved")
+
+        tk.Button(container, text="Save Settings", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=save_settings, cursor="hand2").pack(anchor="w", pady=PADDING_MEDIUM)
     
     def setup_products_tab(self, parent):
         """Setup products management tab"""
@@ -196,16 +267,16 @@ class AdminDashboard(tk.Frame):
         
         # Products tree
         self.products_tree = ttk.Treeview(parent, columns=("Name", "Price", "Stock", "Category"), height=TABLE_HEIGHT)
-        self.products_tree.heading("#0", text="ID")
-        self.products_tree.heading("Name", text="Name")
-        self.products_tree.heading("Price", text="Price")
-        self.products_tree.heading("Stock", text="Stock")
-        self.products_tree.heading("Category", text="Category")
-        self.products_tree.column("#0", width=40)
-        self.products_tree.column("Name", width=150)
-        self.products_tree.column("Price", width=80)
-        self.products_tree.column("Stock", width=80)
-        self.products_tree.column("Category", width=100)
+        self.products_tree.heading("#0", text="ID", anchor=tk.W)
+        self.products_tree.heading("Name", text="Name", anchor=tk.W)
+        self.products_tree.heading("Price", text="Price", anchor=tk.W)
+        self.products_tree.heading("Stock", text="Stock", anchor=tk.W)
+        self.products_tree.heading("Category", text="Category", anchor=tk.W)
+        self.products_tree.column("#0", width=40, anchor=tk.W)
+        self.products_tree.column("Name", width=150, anchor=tk.W)
+        self.products_tree.column("Price", width=80, anchor=tk.W)
+        self.products_tree.column("Stock", width=80, anchor=tk.W)
+        self.products_tree.column("Category", width=100, anchor=tk.W)
         self.products_tree.pack(fill=tk.BOTH, expand=True, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
         
         self.load_products()
@@ -230,14 +301,14 @@ class AdminDashboard(tk.Frame):
         
         # Users tree
         self.users_tree = ttk.Treeview(parent, columns=("Username", "Email", "Role"), height=TABLE_HEIGHT)
-        self.users_tree.heading("#0", text="ID")
-        self.users_tree.heading("Username", text="Username")
-        self.users_tree.heading("Email", text="Email")
-        self.users_tree.heading("Role", text="Role")
-        self.users_tree.column("#0", width=40)
-        self.users_tree.column("Username", width=120)
-        self.users_tree.column("Email", width=150)
-        self.users_tree.column("Role", width=80)
+        self.users_tree.heading("#0", text="ID", anchor=tk.W)
+        self.users_tree.heading("Username", text="Username", anchor=tk.W)
+        self.users_tree.heading("Email", text="Email", anchor=tk.W)
+        self.users_tree.heading("Role", text="Role", anchor=tk.W)
+        self.users_tree.column("#0", width=40, anchor=tk.W)
+        self.users_tree.column("Username", width=120, anchor=tk.W)
+        self.users_tree.column("Email", width=150, anchor=tk.W)
+        self.users_tree.column("Role", width=80, anchor=tk.W)
         self.users_tree.pack(fill=tk.BOTH, expand=True, padx=PADDING_MEDIUM, pady=PADDING_MEDIUM)
         
         self.load_users()
@@ -409,7 +480,7 @@ class AdminDashboard(tk.Frame):
         item = self.products_tree.item(selection[0])
         product_id = item["text"]
         product_name = item["values"][0]
-        product_price = item["values"][1].replace("Ksh ", "").replace(",", "").strip()
+        product_price = parse_currency(item["values"][1])
         product_stock = item["values"][2]
         product_category = item["values"][3]
         
