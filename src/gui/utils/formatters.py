@@ -29,13 +29,45 @@ def format_currency(amount: Union[int, float, str, None]) -> str:
     """Format amount using the current app currency symbol."""
     return f"{gui_config.CURRENCY_SYMBOL} {_coerce_float(amount):,.2f}"
 
-def format_date(date_obj: datetime) -> str:
-    """Format date as readable string (02 Apr 2026)"""
-    return date_obj.strftime("%d %b %Y")
+def _coerce_datetime(value: Union[datetime, str, None]) -> datetime | None:
+    """Convert API date/datetime values to datetime objects when possible."""
+    if isinstance(value, datetime):
+        return value
+    if value is None:
+        return None
 
-def format_datetime(dt_obj: datetime) -> str:
-    """Format datetime as readable string (02 Apr 2026 14:30)"""
-    return dt_obj.strftime("%d %b %Y %H:%M")
+    text = str(value).strip()
+    if not text:
+        return None
+
+    # Accept common backend timestamp formats and ISO variants.
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        pass
+
+    for pattern in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(text, pattern)
+        except ValueError:
+            continue
+
+    return None
+
+
+def format_date(date_obj: Union[datetime, str, None]) -> str:
+    """Format date as readable string (02 Apr 2026)."""
+    parsed = _coerce_datetime(date_obj)
+    if not parsed:
+        return str(date_obj or "")
+    return parsed.strftime("%d %b %Y")
+
+def format_datetime(dt_obj: Union[datetime, str, None]) -> str:
+    """Format datetime as readable string (02 Apr 2026 14:30)."""
+    parsed = _coerce_datetime(dt_obj)
+    if not parsed:
+        return str(dt_obj or "")
+    return parsed.strftime("%d %b %Y %H:%M")
 
 def format_time(time_obj: datetime) -> str:
     """Format time as readable string (14:30)"""

@@ -226,6 +226,36 @@ class APIClient:
         response = self._request("GET", f"/payments/sale/{sale_id}")
         response["payments"] = self._extract_items(response, "payments")
         return response
+
+    def initialize_paystack_payment(
+        self,
+        amount: float,
+        customer_name: str,
+        method: str,
+        email: str = "",
+        phone: str = "",
+        callback_url: str = "",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Initialize a Paystack transaction."""
+        data: Dict[str, Any] = {
+            "amount": amount,
+            "customer_name": customer_name,
+            "method": method,
+        }
+        if email:
+            data["email"] = email
+        if phone:
+            data["phone"] = phone
+        if callback_url:
+            data["callback_url"] = callback_url
+        if metadata:
+            data["metadata"] = metadata
+        return self._request("POST", "/payments/paystack/initialize", data)
+
+    def verify_paystack_payment(self, reference: str) -> Dict[str, Any]:
+        """Verify a Paystack transaction by reference."""
+        return self._request("GET", f"/payments/paystack/verify/{reference}")
     
     # User Methods
     def get_users(self) -> Dict[str, Any]:

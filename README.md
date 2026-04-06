@@ -30,6 +30,21 @@ The app uses **SQLite** for storage (`pos_system.db` is created automatically on
 ### Backend
 After installation, the API server runs at `http://localhost:5000`.
 
+### Paystack Configuration (Card and Mobile Money)
+To enable Paystack for card and mobile money checkout, set these environment variables before starting the backend:
+
+```bash
+PAYSTACK_SECRET_KEY=sk_test_xxx
+PAYSTACK_PUBLIC_KEY=pk_test_xxx
+PAYSTACK_BASE_URL=https://api.paystack.co
+PAYSTACK_CALLBACK_URL=https://your-app.example.com/paystack/callback
+```
+
+Notes:
+- `PAYSTACK_SECRET_KEY` is required for initialize and verify API calls.
+- `PAYSTACK_CALLBACK_URL` is optional but recommended for redirect flow.
+- Cash payments continue to work without Paystack.
+
 ### Desktop GUI (Tkinter)
 The desktop GUI must be run **after** the backend server is started (it connects to `http://localhost:5000/api`).
 

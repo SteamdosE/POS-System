@@ -3,13 +3,18 @@ Cashier Screen - Main POS Interface
 """
 import re
 import tkinter as tk
+import webbrowser
 from tkinter import ttk
 from datetime import datetime
 from .config import *
 from . import config as gui_config
 from .utils.formatters import format_currency, parse_currency
-from .utils.dialogs import show_error, show_success, show_confirmation
+from .utils.dialogs import show_error, show_success, show_confirmation, show_int_input_dialog
 from .utils.api_client import APIError
+
+DEFAULT_PAYSTACK_EMAIL = "donniecarey79564@suffermail.com"
+LOYALTY_POINTS_THRESHOLD = 1000
+LOYALTY_DISCOUNT_RATE = 0.05
 
 class CashierScreen(tk.Frame):
     """Main cashier POS interface"""
@@ -21,6 +26,7 @@ class CashierScreen(tk.Frame):
         self.products = []
         self.customers = []
         self.customer_id_map = {"Walk-in": None}
+        self.customer_points_map = {"Walk-in": 0}
         self.setup_ui()
         self.load_customers()
         self.load_products()
@@ -81,11 +87,15 @@ class CashierScreen(tk.Frame):
         self.cart_tree.column("Price", width=70, anchor=tk.W)
         self.cart_tree.column("Total", width=70, anchor=tk.W)
         self.cart_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.cart_tree.bind("<Double-Button-1>", lambda e: self.edit_cart_quantity())
         
         # Cart controls
         cart_controls = tk.Frame(cart_frame, bg=COLOR_WHITE)
         cart_controls.pack(fill=tk.X, padx=5, pady=5)
         
+        edit_qty_btn = tk.Button(cart_controls, text="Edit Qty", bg=COLOR_PRIMARY, fg=COLOR_WHITE, command=self.edit_cart_quantity, cursor="hand2")
+        edit_qty_btn.pack(side=tk.LEFT, padx=2)
+
         remove_btn = tk.Button(cart_controls, text="Remove", bg=COLOR_DANGER, fg=COLOR_WHITE, command=self.remove_from_cart, cursor="hand2")
         remove_btn.pack(side=tk.LEFT, padx=2)
         
@@ -100,25 +110,30 @@ class CashierScreen(tk.Frame):
         self.subtotal_label = tk.Label(totals_frame, text=format_currency(0), font=FONT_NORMAL, bg=COLOR_LIGHT, fg=COLOR_SUCCESS)
         self.subtotal_label.grid(row=0, column=1, sticky="e")
         
-        tk.Label(totals_frame, text="Discount:", font=FONT_NORMAL, bg=COLOR_LIGHT).grid(row=1, column=0, sticky="w")
+        tk.Label(totals_frame, text="Manual Discount:", font=FONT_NORMAL, bg=COLOR_LIGHT).grid(row=1, column=0, sticky="w")
         self.discount_entry = tk.Entry(totals_frame, width=15, font=FONT_NORMAL)
         self.discount_entry.insert(0, "0")
         self.discount_entry.grid(row=1, column=1, sticky="e", padx=5)
         self.discount_entry.bind("<KeyRelease>", lambda e: self.update_totals())
         
-        self.tax_title_label = tk.Label(totals_frame, text=f"Tax ({gui_config.TAX_RATE*100:.0f}%):", font=FONT_NORMAL, bg=COLOR_LIGHT)
-        self.tax_title_label.grid(row=2, column=0, sticky="w")
-        self.tax_label = tk.Label(totals_frame, text=format_currency(0), font=FONT_NORMAL, bg=COLOR_LIGHT, fg=COLOR_WARNING)
-        self.tax_label.grid(row=2, column=1, sticky="e")
-        
-        tk.Label(totals_frame, text="Total:", font=("Arial", 12, "bold"), bg=COLOR_LIGHT).grid(row=3, column=0, sticky="w")
-        self.total_label = tk.Label(totals_frame, text=format_currency(0), font=("Arial", 12, "bold"), bg=COLOR_LIGHT, fg=COLOR_DANGER)
-        self.total_label.grid(row=3, column=1, sticky="e")
+        tk.Label(totals_frame, text="Loyalty Reward:", font=FONT_NORMAL, bg=COLOR_LIGHT).grid(row=2, column=0, sticky="w")
+        self.loyalty_discount_label = tk.Label(totals_frame, text=format_currency(0), font=FONT_NORMAL, bg=COLOR_LIGHT, fg=COLOR_SECONDARY)
+        self.loyalty_discount_label.grid(row=2, column=1, sticky="e")
 
-        tk.Label(totals_frame, text="Customer:", font=FONT_NORMAL, bg=COLOR_LIGHT).grid(row=4, column=0, sticky="w")
+        self.tax_title_label = tk.Label(totals_frame, text=f"Tax ({gui_config.TAX_RATE*100:.0f}%):", font=FONT_NORMAL, bg=COLOR_LIGHT)
+        self.tax_title_label.grid(row=3, column=0, sticky="w")
+        self.tax_label = tk.Label(totals_frame, text=format_currency(0), font=FONT_NORMAL, bg=COLOR_LIGHT, fg=COLOR_WARNING)
+        self.tax_label.grid(row=3, column=1, sticky="e")
+        
+        tk.Label(totals_frame, text="Total:", font=("Arial", 12, "bold"), bg=COLOR_LIGHT).grid(row=4, column=0, sticky="w")
+        self.total_label = tk.Label(totals_frame, text=format_currency(0), font=("Arial", 12, "bold"), bg=COLOR_LIGHT, fg=COLOR_DANGER)
+        self.total_label.grid(row=4, column=1, sticky="e")
+
+        tk.Label(totals_frame, text="Customer:", font=FONT_NORMAL, bg=COLOR_LIGHT).grid(row=5, column=0, sticky="w")
         self.customer_var = tk.StringVar(value="Walk-in")
         self.customer_combo = ttk.Combobox(totals_frame, textvariable=self.customer_var, state="readonly", width=20)
-        self.customer_combo.grid(row=4, column=1, sticky="e", padx=5, pady=(4, 0))
+        self.customer_combo.grid(row=5, column=1, sticky="e", padx=5, pady=(4, 0))
+        self.customer_combo.bind("<<ComboboxSelected>>", lambda e: self.update_totals())
         
         # Checkout section
         checkout_frame = tk.Frame(cart_frame, bg=COLOR_LIGHT)
@@ -150,16 +165,47 @@ class CashierScreen(tk.Frame):
 
             names = ["Walk-in"]
             self.customer_id_map = {"Walk-in": None}
+            self.customer_points_map = {"Walk-in": 0}
             for customer in self.customers:
                 label = f"{customer.get('name', '')} ({customer.get('id', '')})"
                 names.append(label)
                 self.customer_id_map[label] = customer.get("id")
+                self.customer_points_map[label] = int(customer.get("loyalty_points", 0) or 0)
 
             self.customer_combo["values"] = names
             self.customer_var.set("Walk-in")
+            self.update_totals()
         except APIError:
             self.customer_combo["values"] = ["Walk-in"]
             self.customer_var.set("Walk-in")
+
+    def _get_selected_customer_points(self):
+        selected = self.customer_var.get() or "Walk-in"
+        return int(self.customer_points_map.get(selected, 0) or 0)
+
+    def _calculate_discount_breakdown(self, subtotal: float):
+        manual_discount = 0.0
+        try:
+            manual_discount = float(self.discount_entry.get() or 0)
+        except ValueError:
+            manual_discount = 0.0
+            self.discount_entry.delete(0, tk.END)
+            self.discount_entry.insert(0, "0")
+
+        if manual_discount < 0:
+            manual_discount = 0.0
+
+        loyalty_discount = 0.0
+        customer_id = self._get_selected_customer_id()
+        customer_points = self._get_selected_customer_points() if customer_id is not None else 0
+        if customer_id is not None and customer_points >= LOYALTY_POINTS_THRESHOLD:
+            loyalty_discount = round(subtotal * LOYALTY_DISCOUNT_RATE, 2)
+
+        total_discount = manual_discount + loyalty_discount
+        if total_discount > subtotal:
+            total_discount = subtotal
+
+        return manual_discount, loyalty_discount, total_discount
     
     def display_products(self):
         """Display products in listbox"""
@@ -212,9 +258,56 @@ class CashierScreen(tk.Frame):
                 'id': product['id'],
                 'name': product['name'],
                 'price': unit_price,
-                'qty': 1
+                'qty': 1,
+                'stock': stock,
             })
         
+        self.update_cart_display()
+        self.update_totals()
+
+    def edit_cart_quantity(self):
+        """Edit the quantity of the selected cart item."""
+        selection = self.cart_tree.selection()
+        if not selection:
+            show_error("Error", "Select an item to edit")
+            return
+
+        item = self.cart_tree.item(selection[0])
+        product_id = int(item["text"])
+        cart_item = next((entry for entry in self.cart_items if entry['id'] == product_id), None)
+        if not cart_item:
+            show_error("Error", "Cart item not found")
+            return
+
+        current_qty = int(cart_item.get('qty', 1))
+        stock = int(cart_item.get('stock', 0))
+        if stock <= 0:
+            show_error("Error", "Available stock is not set for this item")
+            return
+
+        result = show_int_input_dialog(
+            "Edit Quantity",
+            f"Enter quantity for {cart_item.get('name', '')} (1 - {stock}):",
+            parent=self,
+        )
+        if result is None:
+            return
+
+        new_qty = int(result)
+        if new_qty <= 0:
+            self.cart_items = [entry for entry in self.cart_items if entry['id'] != product_id]
+            self.update_cart_display()
+            self.update_totals()
+            return
+
+        if new_qty > stock:
+            show_error("Error", f"Quantity cannot exceed available stock ({stock})")
+            return
+
+        if new_qty == current_qty:
+            return
+
+        cart_item['qty'] = new_qty
         self.update_cart_display()
         self.update_totals()
     
@@ -257,24 +350,14 @@ class CashierScreen(tk.Frame):
         """Update total calculations"""
         if not self.cart_items:
             self.subtotal_label.config(text=format_currency(0))
+            self.loyalty_discount_label.config(text=format_currency(0))
             self.tax_label.config(text=format_currency(0))
             self.total_label.config(text=format_currency(0))
             self.tax_title_label.config(text=f"Tax ({gui_config.TAX_RATE*100:.0f}%):")
             return
 
         subtotal = sum(float(parse_currency(item.get('price', 0))) * int(item.get('qty', 0)) for item in self.cart_items)
-        
-        try:
-            discount = float(self.discount_entry.get() or 0)
-        except ValueError:
-            discount = 0
-            self.discount_entry.delete(0, tk.END)
-            self.discount_entry.insert(0, "0")
-
-        if discount < 0:
-            discount = 0
-        if discount > subtotal:
-            discount = subtotal
+        _, loyalty_discount, discount = self._calculate_discount_breakdown(subtotal)
         
         tax_rate = gui_config.TAX_RATE
         tax = (subtotal - discount) * tax_rate
@@ -282,6 +365,7 @@ class CashierScreen(tk.Frame):
         self.tax_title_label.config(text=f"Tax ({tax_rate*100:.0f}%):")
         
         self.subtotal_label.config(text=format_currency(subtotal))
+        self.loyalty_discount_label.config(text=format_currency(loyalty_discount))
         self.tax_label.config(text=format_currency(tax))
         self.total_label.config(text=format_currency(total))
 
@@ -343,206 +427,268 @@ class CashierScreen(tk.Frame):
 
         show_success("Success", f"Sale completed! Receipt ID: {sale_id}")
 
-    def _show_mobile_money_flow(self, sale_data, subtotal, discount, tax_rate, total):
-        """Run a guided mobile money payment flow with success and failure states."""
+    def _run_paystack_payment_flow(self, method: str, amount: float):
+        """Initialize and verify a single Paystack payment flow."""
         dialog = tk.Toplevel(self)
-        dialog.title("Mobile Money Payment")
-        dialog.geometry("520x360")
+        method_label = "Mobile Money" if method == "mobile" else "Card"
+        dialog.title(f"{method_label} Payment")
+        dialog.geometry("560x360")
         dialog.resizable(False, False)
 
-        state = {"after_id": None}
-        phone_var = tk.StringVar()
-        info_label = tk.Label(dialog, text="Enter buyer phone number to start the mobile money process.", wraplength=480, justify="left", font=FONT_NORMAL)
-        info_label.pack(anchor="w", padx=16, pady=(16, 8))
+        result = {"confirmed": False, "reference": None}
 
-        amount_label = tk.Label(dialog, text=f"Amount Due: {format_currency(total)}", font=FONT_HEADING)
+        selected_customer = (self.customer_var.get() or "Walk-in").strip()
+        default_customer_name = selected_customer.split("(", 1)[0].strip() or "Walk-in Customer"
+        customer_name_var = tk.StringVar(value=default_customer_name)
+        email_var = tk.StringVar(value=DEFAULT_PAYSTACK_EMAIL)
+        phone_var = tk.StringVar()
+        status_var = tk.StringVar(value="Enter customer details and initialize payment.")
+        reference_var = tk.StringVar()
+
+        tk.Label(
+            dialog,
+            text=f"{method_label} payment via Paystack",
+            font=FONT_HEADING,
+        ).pack(anchor="w", padx=16, pady=(14, 4))
+
+        amount_label = tk.Label(dialog, text=f"Amount Due: {format_currency(amount)}", font=FONT_NORMAL)
         amount_label.pack(anchor="w", padx=16, pady=(0, 10))
 
         form = tk.Frame(dialog)
         form.pack(fill=tk.X, padx=16)
-        tk.Label(form, text="Buyer Phone Number:").grid(row=0, column=0, sticky="w")
-        phone_entry = tk.Entry(form, textvariable=phone_var, width=26)
-        phone_entry.grid(row=0, column=1, sticky="w", padx=8)
+        tk.Label(form, text="Customer Name:").grid(row=0, column=0, sticky="w")
+        customer_name_entry = tk.Entry(form, textvariable=customer_name_var, width=32)
+        customer_name_entry.grid(row=0, column=1, sticky="w", padx=8, pady=4)
 
-        status_label = tk.Label(dialog, text="Status: Waiting for phone number", fg=COLOR_DARK, wraplength=480, justify="left")
+        tk.Label(form, text="Email (optional):").grid(row=1, column=0, sticky="w")
+        email_entry = tk.Entry(form, textvariable=email_var, width=32)
+        email_entry.grid(row=1, column=1, sticky="w", padx=8, pady=4)
+
+        tk.Label(form, text="Phone (optional):").grid(row=2, column=0, sticky="w")
+        phone_entry = tk.Entry(form, textvariable=phone_var, width=26)
+        phone_entry.grid(row=2, column=1, sticky="w", padx=8, pady=4)
+
+        status_label = tk.Label(dialog, textvariable=status_var, fg=COLOR_DARK, wraplength=520, justify="left")
         status_label.pack(anchor="w", padx=16, pady=(12, 8))
 
         actions = tk.Frame(dialog)
         actions.pack(fill=tk.X, padx=16, pady=8)
 
-        request_btn = tk.Button(actions, text="Send Request", bg=COLOR_PRIMARY, fg=COLOR_WHITE, width=14)
-        request_btn.pack(side=tk.LEFT, padx=(0, 8))
+        init_btn = tk.Button(actions, text="Initialize", bg=COLOR_PRIMARY, fg=COLOR_WHITE, width=14)
+        init_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        accept_btn = tk.Button(actions, text="Buyer Accepted", bg=COLOR_SUCCESS, fg=COLOR_WHITE, width=14, state=tk.DISABLED)
-        accept_btn.pack(side=tk.LEFT, padx=(0, 8))
-
-        decline_btn = tk.Button(actions, text="Buyer Declined", bg=COLOR_DANGER, fg=COLOR_WHITE, width=14, state=tk.DISABLED)
-        decline_btn.pack(side=tk.LEFT)
-
-        verification_frame = tk.Frame(dialog)
-        verification_frame.pack(fill=tk.X, padx=16, pady=(10, 0))
-        verification_frame.pack_forget()
-
-        verify_btn = tk.Button(verification_frame, text="Receipt Found", bg=COLOR_SUCCESS, fg=COLOR_WHITE, width=14, state=tk.DISABLED)
+        verify_btn = tk.Button(actions, text="Verify Payment", bg=COLOR_SUCCESS, fg=COLOR_WHITE, width=14, state=tk.DISABLED)
         verify_btn.pack(side=tk.LEFT, padx=(0, 8))
 
-        missing_btn = tk.Button(verification_frame, text="Receipt Missing", bg=COLOR_WARNING, fg=COLOR_WHITE, width=14, state=tk.DISABLED)
-        missing_btn.pack(side=tk.LEFT)
-
-        retry_btn = tk.Button(dialog, text="Retry", width=12, state=tk.DISABLED)
-        retry_btn.pack(anchor="e", padx=16, pady=(8, 0))
-
-        def clear_after_job():
-            if state["after_id"] is not None:
-                try:
-                    dialog.after_cancel(state["after_id"])
-                except Exception:
-                    pass
-                state["after_id"] = None
-
-        def reset_flow(message):
-            clear_after_job()
-            status_label.config(text=message, fg=COLOR_DANGER)
-            request_btn.config(state=tk.NORMAL)
-            accept_btn.config(state=tk.DISABLED)
-            decline_btn.config(state=tk.DISABLED)
-            verify_btn.config(state=tk.DISABLED)
-            missing_btn.config(state=tk.DISABLED)
-            verification_frame.pack_forget()
-            retry_btn.config(state=tk.NORMAL)
+        cancel_btn = tk.Button(actions, text="Cancel", bg=COLOR_DANGER, fg=COLOR_WHITE, width=14)
+        cancel_btn.pack(side=tk.LEFT)
 
         def close_dialog():
-            clear_after_job()
             dialog.destroy()
 
-        def on_retry():
-            phone_var.set("")
-            status_label.config(text="Status: Waiting for phone number", fg=COLOR_DARK)
-            request_btn.config(state=tk.NORMAL)
-            accept_btn.config(state=tk.DISABLED)
-            decline_btn.config(state=tk.DISABLED)
-            verify_btn.config(state=tk.DISABLED)
-            missing_btn.config(state=tk.DISABLED)
-            verification_frame.pack_forget()
-            retry_btn.config(state=tk.DISABLED)
-            phone_entry.focus()
-
-        def send_request():
+        def initialize_payment():
+            customer_name = (customer_name_var.get() or "").strip()
+            if not customer_name:
+                show_error("Error", "Customer name is required")
+                return
+            email = (email_var.get() or "").strip()
+            if email and "@" not in email:
+                show_error("Error", "Enter a valid email or leave it empty")
+                return
             phone_number = re.sub(r"\D", "", phone_var.get())
-            if len(phone_number) < 9:
-                show_error("Error", "Enter a valid buyer phone number")
+
+            payload = {
+                "method": method,
+                "channel": method,
+                "source": "cashier_gui",
+            }
+            try:
+                response = self.api_client.initialize_paystack_payment(
+                    amount=amount,
+                    customer_name=customer_name,
+                    email=email,
+                    method=method,
+                    phone=phone_number,
+                    metadata=payload,
+                )
+                data = response.get("data") or {}
+                checkout_url = data.get("checkout_url") or data.get("authorization_url")
+                reference = data.get("reference")
+                if not reference:
+                    raise APIError("No Paystack reference returned")
+                reference_var.set(reference)
+                status_var.set("Payment initialized. Complete it in the browser, then click Verify Payment.")
+                status_label.config(fg=COLOR_SUCCESS)
+                verify_btn.config(state=tk.NORMAL)
+                init_btn.config(state=tk.DISABLED)
+
+                if checkout_url:
+                    webbrowser.open(checkout_url)
+            except APIError as error:
+                status_var.set(f"Initialize failed: {error}")
+                status_label.config(fg=COLOR_DANGER)
+
+        def verify_payment():
+            reference = reference_var.get()
+            if not reference:
+                show_error("Error", "Initialize payment first")
                 return
 
-            request_btn.config(state=tk.DISABLED)
-            status_label.config(text=f"Status: Request sent to {phone_number}. Waiting for buyer approval...", fg=COLOR_PRIMARY)
-            accept_btn.config(state=tk.NORMAL)
-            decline_btn.config(state=tk.NORMAL)
-            retry_btn.config(state=tk.DISABLED)
+            try:
+                response = self.api_client.verify_paystack_payment(reference)
+                data = response.get("data") or {}
+                paid = bool(data.get("paid"))
+                paid_amount = float(data.get("amount") or 0)
+                if not paid:
+                    status_var.set("Verification failed: Paystack transaction is not successful yet.")
+                    status_label.config(fg=COLOR_DANGER)
+                    return
+                if paid_amount + 0.01 < amount:
+                    status_var.set("Verification failed: paid amount is below expected amount.")
+                    status_label.config(fg=COLOR_DANGER)
+                    return
 
-        def buyer_declined():
-            reset_flow("Transaction failed: buyer declined the payment request.")
+                result["confirmed"] = True
+                result["reference"] = reference
+                close_dialog()
+            except APIError as error:
+                status_var.set(f"Verification failed: {error}")
+                status_label.config(fg=COLOR_DANGER)
 
-        def buyer_accepted():
-            clear_after_job()
-            status_label.config(text="Status: Buyer accepted. System checking payment receipt...", fg=COLOR_PRIMARY)
-            accept_btn.config(state=tk.DISABLED)
-            decline_btn.config(state=tk.DISABLED)
-            verification_frame.pack(fill=tk.X, padx=16, pady=(10, 0))
-            verify_btn.config(state=tk.NORMAL)
-            missing_btn.config(state=tk.NORMAL)
-            retry_btn.config(state=tk.DISABLED)
-
-        def receipt_found():
-            clear_after_job()
-            status_label.config(text="Status: Receipt verified. Finalizing sale...", fg=COLOR_SUCCESS)
-            verify_btn.config(state=tk.DISABLED)
-            missing_btn.config(state=tk.DISABLED)
-
-            sale_data["payment_method"] = "mobile"
-            sale_data["payment_reference"] = f"MobileMoney:{re.sub(r'\\D', '', phone_var.get())}"
-            sale_data["amount_tendered"] = total
-
-            def complete():
-                try:
-                    self._finalize_sale(sale_data, subtotal, discount, tax_rate, total, "mobile", "mobile money")
-                    close_dialog()
-                except APIError as error:
-                    reset_flow(f"Transaction failed: {error}")
-                except Exception as error:
-                    reset_flow(f"Transaction failed: {error}")
-
-            state["after_id"] = dialog.after(700, complete)
-
-        def receipt_missing():
-            reset_flow("Transaction failed: payment receipt was not found.")
-
-        request_btn.config(command=send_request)
-        accept_btn.config(command=buyer_accepted)
-        decline_btn.config(command=buyer_declined)
-        verify_btn.config(command=receipt_found)
-        missing_btn.config(command=receipt_missing)
-        retry_btn.config(command=on_retry)
+        init_btn.config(command=initialize_payment)
+        verify_btn.config(command=verify_payment)
+        cancel_btn.config(command=close_dialog)
         dialog.protocol("WM_DELETE_WINDOW", close_dialog)
-        phone_entry.focus()
+        customer_name_entry.focus()
+
+        dialog.transient(self)
+        dialog.grab_set()
+        self.wait_window(dialog)
+        return result
+
+    def _attach_paystack_references_for_split(self, payments):
+        """Collect and attach Paystack references for split non-cash payments."""
+        updated = []
+        for payment in payments:
+            method = payment.get("method")
+            amount = float(payment.get("amount") or 0)
+            entry = dict(payment)
+            if method in {"card", "mobile", "paystack"}:
+                flow_result = self._run_paystack_payment_flow(method, amount)
+                if not flow_result.get("confirmed"):
+                    return None
+                entry["reference"] = flow_result.get("reference")
+            updated.append(entry)
+        return updated
 
     def _prompt_split_payments(self, total_due: float):
-        """Collect split payment amounts for cash/card/mobile."""
+        """Collect split payment as cash plus one digital method."""
         dialog = tk.Toplevel(self)
         dialog.title("Split Payment")
-        dialog.geometry("420x280")
+        dialog.geometry("440x300")
         dialog.resizable(False, False)
+        dialog.grid_columnconfigure(0, minsize=140)
+        dialog.grid_columnconfigure(1, minsize=240, weight=1)
 
-        tk.Label(dialog, text=f"Total Due: {format_currency(total_due)}", font=FONT_HEADING).grid(row=0, column=0, columnspan=2, padx=10, pady=10)
+        tk.Label(dialog, text=f"Total Due: {format_currency(total_due)}", font=FONT_HEADING).grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            padx=16,
+            pady=10,
+            sticky="w",
+        )
 
-        tk.Label(dialog, text="Cash:").grid(row=1, column=0, padx=10, pady=6, sticky="w")
-        cash_entry = tk.Entry(dialog, width=22)
+        tk.Label(dialog, text="Cash:").grid(row=1, column=0, padx=(16, 8), pady=6, sticky="e")
+        cash_entry = tk.Entry(dialog, width=24)
         cash_entry.insert(0, "0")
-        cash_entry.grid(row=1, column=1, padx=10, pady=6)
+        cash_entry.grid(row=1, column=1, padx=(8, 16), pady=6, sticky="ew")
 
-        tk.Label(dialog, text="Card:").grid(row=2, column=0, padx=10, pady=6, sticky="w")
-        card_entry = tk.Entry(dialog, width=22)
-        card_entry.insert(0, "0")
-        card_entry.grid(row=2, column=1, padx=10, pady=6)
+        tk.Label(dialog, text="Digital Method:").grid(row=2, column=0, padx=(16, 8), pady=6, sticky="e")
+        digital_method_var = tk.StringVar(value="Card")
+        digital_method_combo = ttk.Combobox(
+            dialog,
+            textvariable=digital_method_var,
+            values=["Card", "Mobile Money"],
+            state="readonly",
+        )
+        digital_method_combo.grid(row=2, column=1, padx=(8, 16), pady=6, sticky="ew")
 
-        tk.Label(dialog, text="Mobile:").grid(row=3, column=0, padx=10, pady=6, sticky="w")
-        mobile_entry = tk.Entry(dialog, width=22)
-        mobile_entry.insert(0, "0")
-        mobile_entry.grid(row=3, column=1, padx=10, pady=6)
+        tk.Label(dialog, text="Digital Amount:").grid(row=3, column=0, padx=(16, 8), pady=6, sticky="e")
+        digital_amount_var = tk.StringVar(value=f"{total_due:.2f}")
+        digital_amount_entry = tk.Entry(dialog, textvariable=digital_amount_var, width=24, state="readonly")
+        digital_amount_entry.grid(row=3, column=1, padx=(8, 16), pady=6, sticky="ew")
+
+        hint_var = tk.StringVar(value="Enter cash received. Remaining amount is calculated automatically.")
+        tk.Label(dialog, textvariable=hint_var, fg=COLOR_DARK, wraplength=400, justify="left").grid(
+            row=4,
+            column=0,
+            columnspan=2,
+            padx=16,
+            pady=(2, 8),
+            sticky="w",
+        )
 
         result = {"confirmed": False, "payments": []}
 
-        def confirm_split():
+        def calculate_remaining() -> tuple[float, float] | tuple[None, None]:
+            raw_value = (cash_entry.get() or "").strip()
+            if not raw_value:
+                raw_value = "0"
             try:
-                cash = float(cash_entry.get() or 0)
-                card = float(card_entry.get() or 0)
-                mobile = float(mobile_entry.get() or 0)
+                cash_value = float(raw_value)
             except ValueError:
-                show_error("Error", "Split amounts must be numeric")
+                digital_amount_var.set("-")
+                hint_var.set("Cash must be numeric.")
+                return None, None
+
+            if cash_value < 0:
+                digital_amount_var.set("-")
+                hint_var.set("Cash cannot be negative.")
+                return None, None
+
+            remaining = round(total_due - cash_value, 2)
+            if remaining <= 0:
+                digital_amount_var.set("0.00")
+                hint_var.set("Cash covers the total. Reduce cash value to keep this as a split payment.")
+                return cash_value, 0.0
+
+            digital_amount_var.set(f"{remaining:.2f}")
+            hint_var.set("Remaining amount has been assigned to the selected digital method.")
+            return cash_value, remaining
+
+        cash_entry.bind("<KeyRelease>", lambda _e: calculate_remaining())
+        cash_entry.bind("<FocusOut>", lambda _e: calculate_remaining())
+        calculate_remaining()
+
+        def confirm_split():
+            cash, remaining = calculate_remaining()
+            if cash is None or remaining is None:
+                show_error("Error", "Cash amount must be numeric and non-negative")
                 return
 
-            payments = []
-            if cash > 0:
-                payments.append({"method": "cash", "amount": cash})
-            if card > 0:
-                payments.append({"method": "card", "amount": card})
-            if mobile > 0:
-                payments.append({"method": "mobile", "amount": mobile})
-
-            if not payments:
-                show_error("Error", "At least one split amount must be greater than zero")
+            if cash <= 0:
+                show_error("Error", "Enter a cash amount greater than zero for split payment")
                 return
 
-            total_paid = cash + card + mobile
-            if total_paid < total_due:
-                show_error("Error", "Split amounts are less than total due")
+            if remaining <= 0:
+                show_error("Error", "Cash covers the full total. Use Cash payment or reduce cash amount.")
                 return
+
+            selected_digital = (digital_method_var.get() or "Card").strip().lower()
+            digital_method = "mobile" if selected_digital == "mobile money" else "card"
+
+            payments = [
+                {"method": "cash", "amount": round(cash, 2)},
+                {"method": digital_method, "amount": round(remaining, 2)},
+            ]
 
             result["confirmed"] = True
             result["payments"] = payments
             dialog.destroy()
 
-        tk.Button(dialog, text="Confirm", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=confirm_split, width=16).grid(row=4, column=0, padx=10, pady=20)
-        tk.Button(dialog, text="Cancel", command=dialog.destroy, width=16).grid(row=4, column=1, padx=10, pady=20)
+        tk.Button(dialog, text="Confirm", bg=COLOR_SUCCESS, fg=COLOR_WHITE, command=confirm_split, width=16).grid(row=6, column=0, padx=10, pady=20)
+        tk.Button(dialog, text="Cancel", command=dialog.destroy, width=16).grid(row=6, column=1, padx=10, pady=20)
 
         dialog.transient(self)
         dialog.grab_set()
@@ -558,11 +704,7 @@ class CashierScreen(tk.Frame):
         try:
             # Calculate totals
             subtotal = sum(float(parse_currency(item.get('price', 0))) * int(item.get('qty', 0)) for item in self.cart_items)
-            discount = float(self.discount_entry.get() or 0)
-            if discount < 0:
-                discount = 0
-            if discount > subtotal:
-                discount = subtotal
+            manual_discount, loyalty_discount, discount = self._calculate_discount_breakdown(subtotal)
             tax_rate = gui_config.TAX_RATE
             tax = (subtotal - discount) * tax_rate
             total = subtotal - discount + tax
@@ -572,6 +714,9 @@ class CashierScreen(tk.Frame):
             payments = None
             amount_tendered = None
             if payment_method == "mobile":
+                flow_result = self._run_paystack_payment_flow("mobile", total)
+                if not flow_result.get("confirmed"):
+                    return
                 sale_data = {
                     "items": [
                         {
@@ -580,19 +725,28 @@ class CashierScreen(tk.Frame):
                         }
                         for item in self.cart_items
                     ],
-                    "discount": discount,
+                    "discount": manual_discount,
+                    "loyalty_discount": loyalty_discount,
                     "tax_rate": tax_rate,
                     "payment_method": "mobile",
                     "customer_id": customer_id,
                     "amount_tendered": total,
+                    "payment_reference": flow_result.get("reference"),
                 }
-                self._show_mobile_money_flow(sale_data, subtotal, discount, tax_rate, total)
+                self._finalize_sale(sale_data, subtotal, discount, tax_rate, total, "mobile", "mobile money")
                 return
+            if payment_method == "card":
+                flow_result = self._run_paystack_payment_flow("card", total)
+                if not flow_result.get("confirmed"):
+                    return
             if payment_method == "split":
                 split_result = self._prompt_split_payments(total)
                 if not split_result.get("confirmed"):
                     return
                 payments = split_result.get("payments", [])
+                payments = self._attach_paystack_references_for_split(payments)
+                if payments is None:
+                    return
             elif payment_method == "cash":
                 amount_tendered = total
             
@@ -605,13 +759,16 @@ class CashierScreen(tk.Frame):
                     }
                     for item in self.cart_items
                 ],
-                "discount": discount,
+                "discount": manual_discount,
+                "loyalty_discount": loyalty_discount,
                 "tax_rate": tax_rate,
                 "payment_method": payment_method,
                 "customer_id": customer_id,
             }
             if payments:
                 sale_data["payments"] = payments
+            if payment_method == "card":
+                sale_data["payment_reference"] = flow_result.get("reference")
             if amount_tendered is not None:
                 sale_data["amount_tendered"] = amount_tendered
             

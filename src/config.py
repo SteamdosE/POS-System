@@ -31,6 +31,14 @@ class Config:
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
+    # Paystack
+    PAYSTACK_SECRET_KEY: str = os.getenv("PAYSTACK_SECRET_KEY", "")
+    PAYSTACK_PUBLIC_KEY: str = os.getenv("PAYSTACK_PUBLIC_KEY", "")
+    PAYSTACK_CURRENCY: str = os.getenv("PAYSTACK_CURRENCY", "NGN")
+    PAYSTACK_BASE_URL: str = os.getenv("PAYSTACK_BASE_URL", "https://api.paystack.co")
+    PAYSTACK_CALLBACK_URL: str = os.getenv("PAYSTACK_CALLBACK_URL", "")
+    PAYSTACK_CHECKOUT_TOKEN_MAX_AGE: int = int(os.getenv("PAYSTACK_CHECKOUT_TOKEN_MAX_AGE", "900"))
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""

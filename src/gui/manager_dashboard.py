@@ -463,9 +463,9 @@ class ManagerDashboard(tk.Frame):
             
             total_sales = 0
             for sale in response.get("sales", []):
-                sale_total = sale.get("total_amount", sale.get("total", 0))
-                sale_date = sale.get("created_at", sale.get("date", ""))
-                sale_items = sale.get("items_count", len(sale.get("items", [])))
+                sale_total = float(sale.get("total_amount", sale.get("total", 0)) or 0)
+                sale_date = sale.get("created_at", sale.get("date", "")) or ""
+                sale_items = int(sale.get("items_count", len(sale.get("items", []))) or 0)
                 total_sales += sale_total
                 self.sales_tree.insert("", tk.END, text=sale.get("id", ""), values=(
                     format_datetime(sale_date),
@@ -478,6 +478,8 @@ class ManagerDashboard(tk.Frame):
             self.transaction_label.config(text=str(len(response.get("sales", []))))
         except APIError as e:
             show_error("Error", f"Failed to load sales: {str(e)}")
+        except Exception as e:
+            show_error("Error", f"Failed to render sales data: {str(e)}")
 
     def show_daily_report(self):
         """Generate and display manager daily report."""
@@ -524,6 +526,8 @@ class ManagerDashboard(tk.Frame):
             self.analytics_text.config(state=tk.DISABLED)
         except APIError as e:
             show_error("Error", f"Failed to generate daily report: {str(e)}")
+        except Exception as e:
+            show_error("Error", f"Failed to render daily report: {str(e)}")
 
     def show_monthly_report(self):
         """Generate and display manager monthly report."""
@@ -570,6 +574,8 @@ class ManagerDashboard(tk.Frame):
             self.analytics_text.config(state=tk.DISABLED)
         except APIError as e:
             show_error("Error", f"Failed to generate monthly report: {str(e)}")
+        except Exception as e:
+            show_error("Error", f"Failed to render monthly report: {str(e)}")
 
     def export_analytics_report(self):
         """Export analytics report to a timestamped text file."""

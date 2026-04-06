@@ -3,7 +3,7 @@
 from datetime import datetime, timezone, date
 from decimal import Decimal
 
-from flask import Blueprint, request
+from flask import Blueprint, request, current_app
 from sqlalchemy import func
 
 from src.db import db
@@ -13,10 +13,47 @@ from src.models.customer import Customer, SaleCustomer
 from src.models.payment import Payment
 from src.utils.auth import any_authenticated, manager_or_admin_required
 from src.utils.helpers import success_response, error_response, paginate_query
+from src.utils.paystack import PaystackClient, PaystackError
 from flask_jwt_extended import get_jwt_identity
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
 DEFAULT_TAX_RATE = Decimal("0.10")
+LOYALTY_POINTS_THRESHOLD = 1000
+LOYALTY_DISCOUNT_RATE = Decimal("0.05")
+
+
+def _paystack_client() -> PaystackClient:
+    return PaystackClient(
+        secret_key=current_app.config.get("PAYSTACK_SECRET_KEY", ""),
+        base_url=current_app.config.get("PAYSTACK_BASE_URL", "https://api.paystack.co"),
+    )
+
+
+def _verify_paystack_reference(reference: str, expected_amount: Decimal) -> tuple[bool, str]:
+    """Verify Paystack reference status and expected amount."""
+    client = _paystack_client()
+    if not client.is_configured:
+        return False, "Paystack is not configured on this server"
+    if not reference:
+        return False, "Payment reference is required"
+
+    try:
+        result = client.verify_transaction(reference)
+    except PaystackError as exc:
+        return False, str(exc)
+
+    if (result.get("status") or "").lower() != "success":
+        return False, "Paystack transaction is not successful"
+
+    amount_kobo = result.get("amount")
+    if not isinstance(amount_kobo, (int, float)):
+        return False, "Paystack amount is missing"
+
+    paid_amount = Decimal(str(amount_kobo)) / Decimal("100")
+    if paid_amount + Decimal("0.01") < expected_amount:
+        return False, "Paystack paid amount is less than expected amount"
+
+    return True, "verified"
 
 
 @sales_bp.route("", methods=["POST"])
@@ -102,11 +139,19 @@ def create_sale():
         sale_items.append((product, quantity, unit_price, subtotal))
 
     try:
-        discount = Decimal(str(data.get("discount", 0) or 0))
+        manual_discount = Decimal(str(data.get("discount", 0) or 0))
     except Exception:
         return error_response("discount must be numeric", 400)
-    if discount < 0:
+    if manual_discount < 0:
         return error_response("discount cannot be negative", 400)
+
+    loyalty_discount = Decimal("0")
+    loyalty_points_redeemed = 0
+    if customer and customer.loyalty_points >= LOYALTY_POINTS_THRESHOLD:
+        loyalty_discount = (total_amount * LOYALTY_DISCOUNT_RATE).quantize(Decimal("0.01"))
+        loyalty_points_redeemed = LOYALTY_POINTS_THRESHOLD
+
+    discount = manual_discount + loyalty_discount
     if discount > total_amount:
         discount = total_amount
 
@@ -156,9 +201,9 @@ def create_sale():
             cash_payment_idx = None
             for idx, p in enumerate(split_payments):
                 method = p.get("method")
-                if method not in {"cash", "card", "mobile"}:
+                if method not in {"cash", "card", "mobile", "paystack"}:
                     db.session.rollback()
-                    return error_response("Each split payment method must be cash, card, or mobile", 400)
+                    return error_response("Each split payment method must be cash, card, mobile, or paystack", 400)
                 try:
                     amount = Decimal(str(p.get("amount", 0)))
                 except Exception:
@@ -167,12 +212,19 @@ def create_sale():
                 if amount <= 0:
                     db.session.rollback()
                     return error_response("Each split payment amount must be greater than 0", 400)
+
+                if method in {"card", "mobile", "paystack"}:
+                    verified, message = _verify_paystack_reference(str(p.get("reference") or ""), amount)
+                    if not verified:
+                        db.session.rollback()
+                        return error_response(f"Split {method} verification failed: {message}", 400)
+
                 split_total += amount
                 if method == "cash" and cash_payment_idx is None:
                     cash_payment_idx = idx
                 payment_records.append(
                     {
-                        "method": method,
+                        "method": "card" if method == "paystack" else method,
                         "amount": amount,
                         "reference": p.get("reference"),
                         "tendered_amount": p.get("tendered_amount"),
@@ -193,6 +245,7 @@ def create_sale():
         else:
             paid_amount = grand_total
             tendered_amount = None
+            payment_reference = data.get("payment_reference")
             if payment_method == "cash":
                 raw_tendered = data.get("amount_tendered")
                 if raw_tendered is not None:
@@ -206,12 +259,17 @@ def create_sale():
                         return error_response("amount_tendered is less than total due", 400)
                     paid_amount = tendered_amount
                     total_change = tendered_amount - grand_total
+            elif payment_method in {"card", "mobile"}:
+                verified, message = _verify_paystack_reference(str(payment_reference or ""), grand_total)
+                if not verified:
+                    db.session.rollback()
+                    return error_response(f"{payment_method} verification failed: {message}", 400)
 
             payment_records.append(
                 {
                     "method": payment_method,
                     "amount": paid_amount,
-                    "reference": data.get("payment_reference"),
+                    "reference": payment_reference,
                     "tendered_amount": tendered_amount,
                     "change_amount": total_change,
                 }
@@ -232,6 +290,8 @@ def create_sale():
 
         if customer:
             db.session.add(SaleCustomer(sale_id=sale.id, customer_id=customer.id))
+            if loyalty_points_redeemed:
+                customer.loyalty_points = max(0, customer.loyalty_points - loyalty_points_redeemed)
             points_earned = int(grand_total // Decimal("100"))
             customer.loyalty_points += points_earned
 
@@ -240,6 +300,8 @@ def create_sale():
         payload["payment_method"] = payment_method
         payload["financials"] = {
             "subtotal": float(total_amount),
+            "manual_discount": float(manual_discount),
+            "loyalty_discount": float(loyalty_discount),
             "discount": float(discount),
             "tax_rate": float(tax_rate),
             "tax_amount": float(tax_amount),
