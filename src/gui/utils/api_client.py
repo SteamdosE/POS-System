@@ -158,3 +158,33 @@ class APIClient:
     def is_authenticated(self) -> bool:
         """Check if user is logged in"""
         return self.token is not None
+
+    # Paystack Payment Methods
+    def initialize_paystack_payment(self, email: str, amount: float,
+                                    reference: Optional[str] = None) -> Dict[str, Any]:
+        """Initialize a Paystack transaction.
+
+        Args:
+            email: Customer e-mail address.
+            amount: Amount in the local currency unit (e.g. KES).
+            reference: Optional custom reference string.
+
+        Returns:
+            dict with ``authorization_url``, ``access_code``, and ``reference``.
+        """
+        data: Dict[str, Any] = {"email": email, "amount": amount}
+        if reference:
+            data["reference"] = reference
+        return self._request("POST", "/payments/paystack/initialize", data)
+
+    def verify_paystack_payment(self, reference: str) -> Dict[str, Any]:
+        """Verify a Paystack transaction by its reference.
+
+        Args:
+            reference: The reference returned by :meth:`initialize_paystack_payment`.
+
+        Returns:
+            dict with ``status``, ``reference``, ``amount``, ``currency``,
+            ``paid_at``, and ``channel``.
+        """
+        return self._request("GET", f"/payments/paystack/verify/{reference}")
