@@ -3,12 +3,61 @@
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt_identity
 
-from src.database import db
+from src.db import db
 from src.models.user import User
 from src.utils.auth import admin_required, any_authenticated
 from src.utils.helpers import success_response, error_response, paginate_query
 
 users_bp = Blueprint("users", __name__, url_prefix="/api/users")
+
+
+@users_bp.route("", methods=["POST"])
+@admin_required
+def create_user():
+    """Create a new user (admin only).
+
+    Request JSON body::
+
+        {
+            "username": "string",
+            "email": "string",
+            "password": "string",
+            "role": "admin|manager|cashier"  (optional, defaults to cashier)
+        }
+
+    Returns:
+        201: User created.
+        400: Validation error.
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return error_response("Request body must be JSON", 400)
+
+    required = ("username", "email", "password")
+    missing = [field for field in required if not data.get(field)]
+    if missing:
+        return error_response(f"Missing required fields: {', '.join(missing)}", 400)
+
+    username = str(data["username"]).strip()
+    email = str(data["email"]).strip()
+    password = str(data["password"])
+
+    if User.query.filter_by(username=username).first():
+        return error_response("Username already taken", 400)
+    if User.query.filter_by(email=email).first():
+        return error_response("Email already registered", 400)
+
+    allowed_roles = {"admin", "manager", "cashier"}
+    role = str(data.get("role", "cashier")).strip().lower()
+    if role not in allowed_roles:
+        return error_response(f"Invalid role. Must be one of: {', '.join(allowed_roles)}", 400)
+
+    user = User(username=username, email=email, role=role)
+    user.set_password(password)
+
+    db.session.add(user)
+    db.session.commit()
+    return success_response(user.to_dict(), "User created", 201)
 
 
 @users_bp.route("", methods=["GET"])
@@ -100,9 +149,10 @@ def update_user(user_id: int):
     if current_user.role == "admin":
         if "role" in data:
             allowed_roles = {"admin", "manager", "cashier"}
-            if data["role"] not in allowed_roles:
+            role = str(data["role"]).strip().lower()
+            if role not in allowed_roles:
                 return error_response(f"Invalid role. Must be one of: {', '.join(allowed_roles)}", 400)
-            user.role = data["role"]
+            user.role = role
         if "is_active" in data:
             user.is_active = bool(data["is_active"])
 

@@ -7,8 +7,8 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-from config import get_config
-from database import db
+from src.config import get_config
+from src.db import db, init_db
 
 
 def create_app(config=None) -> Flask:
@@ -44,12 +44,16 @@ def create_app(config=None) -> Flask:
     from src.routes.users import users_bp
     from src.routes.products import products_bp
     from src.routes.sales import sales_bp
+    from src.routes.categories import categories_bp
+    from src.routes.customers import customers_bp
     from src.routes.payments import payments_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(products_bp)
     app.register_blueprint(sales_bp)
+    app.register_blueprint(categories_bp)
+    app.register_blueprint(customers_bp)
     app.register_blueprint(payments_bp)
 
     # Global error handlers

@@ -1,32 +1,46 @@
-class Customer:
-    def __init__(self, name, email, phone):
-        self.name = name
-        self.email = email
-        self.phone = phone
+"""Customer and customer-sale link SQLAlchemy models."""
 
-    def save(self):
-        # Logic to save the customer data to a database
-        pass
+from src.models.base import BaseModel
+from src.db import db
 
-    @classmethod
-    def get_by_id(cls, customer_id):
-        # Logic to retrieve a customer by their ID from the database
-        pass
 
-    @classmethod
-    def get_by_email(cls, email):
-        # Logic to retrieve a customer by their email from the database
-        pass
+class Customer(BaseModel):
+    """Represents a customer profile and loyalty balance."""
 
-    @classmethod
-    def get_all(cls):
-        # Logic to retrieve all customers from the database
-        pass
+    __tablename__ = "customers"
 
-    def update(self):
-        # Logic to update customer data in the database
-        pass
+    name = db.Column(db.String(120), nullable=False, index=True)
+    phone_number = db.Column(db.String(30), nullable=True, unique=True, index=True)
+    email = db.Column(db.String(120), nullable=True, unique=True, index=True)
+    address = db.Column(db.String(255), nullable=True)
+    loyalty_points = db.Column(db.Integer, nullable=False, default=0)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
-    def delete(self):
-        # Logic to delete the customer from the database
-        pass
+    sales_links = db.relationship(
+        "SaleCustomer",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self) -> str:
+        return f"<Customer {self.id}: {self.name}>"
+
+
+class SaleCustomer(db.Model):
+    """Maps a sale to a customer for purchase history tracking."""
+
+    __tablename__ = "sale_customers"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey("sales.id"), nullable=False, unique=True, index=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False, index=True)
+
+    sale = db.relationship("Sale")
+    customer = db.relationship("Customer", back_populates="sales_links")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "sale_id": self.sale_id,
+            "customer_id": self.customer_id,
+        }
