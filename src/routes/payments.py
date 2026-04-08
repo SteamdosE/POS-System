@@ -133,7 +133,7 @@ def verify_payment(reference: str):
         {
             "status": ps_data.get("status"),
             "reference": ps_data.get("reference"),
-            "amount": (ps_data.get("amount") or 0) / 100,
+            "amount": float(ps_data.get("amount") or 0) / 100,
             "currency": ps_data.get("currency"),
             "paid_at": ps_data.get("paid_at"),
             "channel": ps_data.get("channel"),
