@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 """Test Paystack SDK configuration."""
+import os
+import sys
+
+from dotenv import load_dotenv
 from paystack.configuration import Configuration
 from paystack import Transaction
+
+load_dotenv()
 
 print("Testing SDK configuration...")
 print()
@@ -12,7 +18,12 @@ print(f"Default Configuration api_key: {config.api_key}")
 print()
 
 # Try setting Bearer token
-config.api_key['Bearer'] = 'sk_test_example'
+secret_key = (os.getenv("PAYSTACK_SECRET_KEY") or "").strip()
+if not secret_key:
+	print("PAYSTACK_SECRET_KEY is missing in environment")
+	sys.exit(1)
+
+config.api_key['Bearer'] = secret_key
 print(f"After setting Bearer: {config.api_key}")
 print()
 

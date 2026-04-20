@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 """Test and explore the Paystack SDK directly."""
 
+import os
+import sys
+
+from dotenv import load_dotenv
 from paystack import Transaction, Configuration
 import json
+
+load_dotenv()
 
 # Create a Transaction instance
 print("=" * 60)
@@ -23,7 +29,12 @@ if t.api_client.configuration.api_key is None:
     t.api_client.configuration.api_key = {}
     print("   Initialized api_key as empty dict")
 
-t.api_client.configuration.api_key['Bearer'] = 'sk_test_384873d018d144def2cd5e7c7f2549866f4d37f9'
+secret_key = (os.getenv("PAYSTACK_SECRET_KEY") or "").strip()
+if not secret_key:
+    print("   PAYSTACK_SECRET_KEY is missing in environment")
+    sys.exit(1)
+
+t.api_client.configuration.api_key['Bearer'] = secret_key
 print(f"   API key after setting: {t.api_client.configuration.api_key}")
 
 # Test 3: Check initialize method signature

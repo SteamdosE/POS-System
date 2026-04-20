@@ -1,10 +1,15 @@
 """Application configuration management."""
 
 import os
+from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 
-load_dotenv()
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ENV_FILE = PROJECT_ROOT / ".env"
+
+# Always prefer this repository's .env values over inherited shell/user variables.
+load_dotenv(dotenv_path=ENV_FILE, override=True)
 
 
 class Config:
